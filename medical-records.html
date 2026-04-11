@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Medical Records — MediConnect Patient</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="logo-brand"><span class="logo-icon">🏥</span> MediConnect</div><div class="logo-sub">Patient Portal</div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Main</div>
+      <a href="dashboard.html" class="nav-link"><span class="nav-icon">🏠</span> Dashboard</a>
+      <a href="doctors.html" class="nav-link"><span class="nav-icon">👨‍⚕️</span> Find Doctors</a>
+      <a href="appointments.html" class="nav-link"><span class="nav-icon">📅</span> Appointments</a>
+      <div class="nav-group-label">Health</div>
+      <a href="medical-records.html" class="nav-link active"><span class="nav-icon">📁</span> Medical Records</a>
+      <a href="prescriptions.html" class="nav-link"><span class="nav-icon">💊</span> Prescriptions</a>
+      <a href="lab-reports.html" class="nav-link"><span class="nav-icon">🔬</span> Lab Reports</a>
+      <a href="pharmacy.html" class="nav-link"><span class="nav-icon">🏪</span> Pharmacy</a>
+      <div class="nav-group-label">Account</div>
+      <a href="billing.html" class="nav-link"><span class="nav-icon">💳</span> Billing</a>
+      <a href="profile.html" class="nav-link"><span class="nav-icon">👤</span> Profile</a>
+      <a href="notifications.html" class="nav-link"><span class="nav-icon">🔔</span> Notifications</a>
+      <a href="emergency.html" class="nav-link"><span class="nav-icon">🆘</span> Emergency SOS</a>
+    </nav>
+    <div class="sidebar-footer"><div class="sidebar-user" onclick="logout()"><div class="s-avatar" id="sidebar-avatar">P</div><div><div class="s-user-name" id="sidebar-user-name">Patient</div><div class="s-user-role">Sign out →</div></div></div></div>
+  </aside>
+
+  <main class="main-content">
+    <header class="top-bar">
+      <div class="top-bar-title">Medical Records</div>
+      <div class="top-bar-actions">
+        <button class="btn btn-primary btn-sm" onclick="openModal('uploadModal')">+ Upload Record</button>
+        <button class="icon-btn" onclick="window.location.href='notifications.html'">🔔</button>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" placeholder="Search records…" />
+        </div>
+        <select class="form-control" id="typeFilter" style="width:auto;min-width:180px;" onchange="loadRecords()">
+          <option value="">All Types</option>
+          <option>Discharge Summary</option>
+          <option>Blood Test</option>
+          <option>X-Ray</option>
+          <option>MRI / CT Scan</option>
+          <option>ECG</option>
+          <option>Vaccination</option>
+          <option>Surgery Report</option>
+          <option>Other</option>
+        </select>
+        <button class="btn btn-secondary" onclick="loadRecords()">Filter</button>
+      </div>
+
+      <!-- Records Table -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">All Records</span>
+          <span class="text-muted text-sm" id="rec-count">0 records</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Title</th><th>Type</th><th>Date</th><th>Doctor / Hospital</th><th>Notes</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="records-tbody">
+              <tr><td colspan="6" style="text-align:center;padding:48px;color:var(--text-muted);">No records found. Upload your first medical record.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Upload Record Modal -->
+<div class="modal-overlay" id="uploadModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Upload Medical Record</span><button class="modal-close" onclick="closeModal('uploadModal')">✕</button></div>
+    <div class="modal-body">
+      <form id="uploadForm">
+        <div class="form-group">
+          <label class="form-label">Record Title</label>
+          <input type="text" class="form-control" id="rec-title" placeholder="e.g. Blood Test Report - Jan 2025" required />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Record Type</label>
+            <select class="form-control" id="rec-type" required>
+              <option value="">Select type</option>
+              <option>Discharge Summary</option><option>Blood Test</option><option>X-Ray</option>
+              <option>MRI / CT Scan</option><option>ECG</option><option>Vaccination</option>
+              <option>Surgery Report</option><option>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Record Date</label>
+            <input type="date" class="form-control" id="rec-date" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Doctor / Hospital</label>
+          <input type="text" class="form-control" id="rec-source" placeholder="Name of doctor or hospital" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes</label>
+          <textarea class="form-control" id="rec-notes" placeholder="Any additional notes…"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Upload File</label>
+          <input type="file" class="form-control" id="rec-file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
+          <div class="form-hint">Supported: PDF, JPG, PNG, DOC — Max 10MB</div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('uploadModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitUpload()">Upload Record</button>
+    </div>
+  </div>
+</div>
+
+<!-- View Record Modal -->
+<div class="modal-overlay" id="viewModal">
+  <div class="modal modal-lg">
+    <div class="modal-header"><span class="modal-title">Record Details</span><button class="modal-close" onclick="closeModal('viewModal')">✕</button></div>
+    <div class="modal-body" id="viewModalBody">Loading…</div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('viewModal')">Close</button>
+      <button class="btn btn-primary" id="download-btn">⬇ Download</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="js/app.js"></script>
+<script>
+  function logout() { auth.clear(); window.location.href = 'index.html'; }
+
+  // GET /api/records?type=&search=
+  async function loadRecords() {
+    const type = document.getElementById('typeFilter').value;
+    const search = document.getElementById('searchInput').value;
+    try {
+      const params = new URLSearchParams({ type, search }).toString();
+      const data = await GET(`/records?${params}`);
+      const records = Array.isArray(data) ? data : data.records || [];
+      document.getElementById('rec-count').textContent = `${records.length} records`;
+      if (!records.length) {
+        document.getElementById('records-tbody').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:48px;color:var(--text-muted);">No records found.</td></tr>';
+        return;
+      }
+      document.getElementById('records-tbody').innerHTML = records.map(r => `
+        <tr>
+          <td><div class="fw-600">📄 ${r.title}</div></td>
+          <td><span class="pill">${r.type}</span></td>
+          <td>${fmtDate(r.date)}</td>
+          <td>${r.source || '—'}</td>
+          <td><span class="text-muted text-sm">${r.notes || '—'}</span></td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-secondary btn-sm" onclick="viewRecord(${r.id})">View</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteRecord(${r.id})">Delete</button>
+            </div>
+          </td>
+        </tr>`).join('');
+    } catch (err) { toast(err.message, 'error'); }
+  }
+
+  // POST /api/records  (FormData)
+  async function submitUpload() {
+    const title = document.getElementById('rec-title').value;
+    const type = document.getElementById('rec-type').value;
+    const date = document.getElementById('rec-date').value;
+    if (!title || !type || !date) { toast('Please fill required fields', 'error'); return; }
+
+    const fd = new FormData();
+    fd.append('title', title);
+    fd.append('type', type);
+    fd.append('date', date);
+    fd.append('source', document.getElementById('rec-source').value);
+    fd.append('notes', document.getElementById('rec-notes').value);
+    const file = document.getElementById('rec-file').files[0];
+    if (file) fd.append('file', file);
+
+    try {
+      await POST('/records', fd, true);
+      closeModal('uploadModal');
+      toast('Record uploaded successfully!', 'success');
+      loadRecords();
+    } catch (err) { toast(err.message || 'Upload failed', 'error'); }
+  }
+
+  // GET /api/records/:id
+  async function viewRecord(id) {
+    openModal('viewModal');
+    try {
+      const r = await GET(`/records/${id}`);
+      document.getElementById('viewModalBody').innerHTML = `
+        <div class="flex gap-3 mb-4">
+          <div style="font-size:40px;">📄</div>
+          <div>
+            <h3 style="font-size:17px;font-weight:700;">${r.title}</h3>
+            <div class="text-muted text-sm">${r.type} · ${fmtDate(r.date)}</div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="form-row mb-4">
+          <div><div class="fw-700 text-sm mb-1">Source</div><div>${r.source || '—'}</div></div>
+          <div><div class="fw-700 text-sm mb-1">Uploaded</div><div>${fmtDate(r.created_at)}</div></div>
+        </div>
+        <div class="form-group"><div class="fw-700 text-sm mb-1">Notes</div><p class="text-light">${r.notes || 'No notes'}</p></div>
+        ${r.file_url ? `<div class="alert alert-info"><span>📎</span> File attached: ${r.file_name || 'document'}</div>` : ''}`;
+      document.getElementById('download-btn').onclick = () => r.file_url ? window.open(r.file_url) : toast('No file attached', 'warning');
+    } catch (err) {
+      document.getElementById('viewModalBody').innerHTML = `<p class="text-danger">Failed to load: ${err.message}</p>`;
+    }
+  }
+
+  // DELETE /api/records/:id
+  async function deleteRecord(id) {
+    if (!confirm('Delete this record? This cannot be undone.')) return;
+    try {
+      await DEL(`/records/${id}`);
+      toast('Record deleted', 'success');
+      loadRecords();
+    } catch (err) { toast(err.message || 'Delete failed', 'error'); }
+  }
+
+  loadRecords();
+  document.getElementById('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') loadRecords(); });
+</script>
+</body>
+</html>

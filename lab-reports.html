@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lab Reports — MediConnect Patient</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="logo-brand"><span class="logo-icon">🏥</span> MediConnect</div><div class="logo-sub">Patient Portal</div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Main</div>
+      <a href="dashboard.html" class="nav-link"><span class="nav-icon">🏠</span> Dashboard</a>
+      <a href="doctors.html" class="nav-link"><span class="nav-icon">👨‍⚕️</span> Find Doctors</a>
+      <a href="appointments.html" class="nav-link"><span class="nav-icon">📅</span> Appointments</a>
+      <div class="nav-group-label">Health</div>
+      <a href="medical-records.html" class="nav-link"><span class="nav-icon">📁</span> Medical Records</a>
+      <a href="prescriptions.html" class="nav-link"><span class="nav-icon">💊</span> Prescriptions</a>
+      <a href="lab-reports.html" class="nav-link active"><span class="nav-icon">🔬</span> Lab Reports</a>
+      <a href="pharmacy.html" class="nav-link"><span class="nav-icon">🏪</span> Pharmacy</a>
+      <div class="nav-group-label">Account</div>
+      <a href="billing.html" class="nav-link"><span class="nav-icon">💳</span> Billing</a>
+      <a href="profile.html" class="nav-link"><span class="nav-icon">👤</span> Profile</a>
+      <a href="notifications.html" class="nav-link"><span class="nav-icon">🔔</span> Notifications</a>
+      <a href="emergency.html" class="nav-link"><span class="nav-icon">🆘</span> Emergency SOS</a>
+    </nav>
+    <div class="sidebar-footer"><div class="sidebar-user" onclick="logout()"><div class="s-avatar" id="sidebar-avatar">P</div><div><div class="s-user-name" id="sidebar-user-name">Patient</div><div class="s-user-role">Sign out →</div></div></div></div>
+  </aside>
+
+  <main class="main-content">
+    <header class="top-bar">
+      <div class="top-bar-title">Lab Reports</div>
+      <div class="top-bar-actions">
+        <button class="icon-btn" onclick="window.location.href='notifications.html'">🔔</button>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <!-- Filter -->
+      <div class="filter-bar">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" placeholder="Search tests…" />
+        </div>
+        <select class="form-control" id="statusFilter" style="width:auto;min-width:160px;" onchange="loadReports()">
+          <option value="">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="ready">Ready</option>
+        </select>
+        <input type="date" class="form-control" id="fromDate" style="width:auto;" />
+        <input type="date" class="form-control" id="toDate" style="width:auto;" />
+        <button class="btn btn-secondary" onclick="loadReports()">Filter</button>
+      </div>
+
+      <!-- Reports List -->
+      <div id="reports-container">
+        <div class="empty-state"><div class="empty-icon">🔬</div><h3>Loading lab reports…</h3></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Lab Report Detail Modal -->
+<div class="modal-overlay" id="reportModal">
+  <div class="modal modal-lg">
+    <div class="modal-header"><span class="modal-title">Lab Report Details</span><button class="modal-close" onclick="closeModal('reportModal')">✕</button></div>
+    <div class="modal-body" id="reportModalBody">Loading…</div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('reportModal')">Close</button>
+      <button class="btn btn-primary" id="download-report-btn">⬇ Download Report</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="js/app.js"></script>
+<script>
+  function logout() { auth.clear(); window.location.href = 'index.html'; }
+
+  // GET /api/lab-reports?status=&from=&to=&search=
+  async function loadReports() {
+    const params = new URLSearchParams({
+      status: document.getElementById('statusFilter').value,
+      from: document.getElementById('fromDate').value,
+      to: document.getElementById('toDate').value,
+      search: document.getElementById('searchInput').value
+    }).toString();
+    document.getElementById('reports-container').innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><h3>Loading…</h3></div>';
+    try {
+      const data = await GET(`/lab-reports?${params}`);
+      const reports = Array.isArray(data) ? data : data.reports || [];
+      if (!reports.length) {
+        document.getElementById('reports-container').innerHTML = '<div class="empty-state"><div class="empty-icon">🔬</div><h3>No lab reports found</h3><p>Your test results will appear here once ready</p></div>';
+        return;
+      }
+      document.getElementById('reports-container').innerHTML = reports.map(r => `
+        <div class="card mb-22" style="margin-bottom:16px;">
+          <div class="card-header">
+            <div>
+              <span class="card-title">🔬 ${r.test_name}</span>
+              <div class="text-muted text-xs" style="margin-top:2px;">Ordered by Dr. ${r.doctor_name} · ${fmtDate(r.date)}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="badge ${r.status === 'ready' ? 'badge-success' : 'badge-warning'}">${r.status === 'ready' ? 'Results Ready' : 'Pending'}</span>
+              ${r.status === 'ready' ? `<button class="btn btn-primary btn-sm" onclick="viewReport(${r.id})">View Results</button>` : ''}
+            </div>
+          </div>
+          ${r.status === 'ready' && r.results?.length ? `
+          <div class="card-body">
+            ${r.results.slice(0, 4).map(res => `
+              <div class="lab-result">
+                <div>
+                  <div class="lr-name">${res.parameter}</div>
+                  <div class="lr-ref">Ref: ${res.reference_range} ${res.unit}</div>
+                </div>
+                <div style="text-align:right;">
+                  <div class="lr-value ${res.flag === 'High' ? 'text-danger' : res.flag === 'Low' ? 'text-warning' : 'text-success'}">${res.value} ${res.unit}</div>
+                  <div class="text-xs ${res.flag ? 'text-danger' : 'text-success'}">${res.flag || 'Normal'}</div>
+                </div>
+              </div>`).join('')}
+            ${r.results.length > 4 ? `<button class="btn btn-ghost btn-sm mt-4" onclick="viewReport(${r.id})">View all ${r.results.length} parameters →</button>` : ''}
+          </div>` : ''}
+        </div>`).join('');
+    } catch (err) {
+      document.getElementById('reports-container').innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><h3>Failed to load</h3><p>${err.message}</p></div>`;
+    }
+  }
+
+  // GET /api/lab-reports/:id
+  async function viewReport(id) {
+    openModal('reportModal');
+    try {
+      const r = await GET(`/lab-reports/${id}`);
+      document.getElementById('reportModalBody').innerHTML = `
+        <div style="background:var(--bg);border-radius:10px;padding:16px;margin-bottom:20px;">
+          <div class="flex justify-between items-center mb-2">
+            <h3 class="fw-700">🔬 ${r.test_name}</h3>
+            <span class="badge badge-success">Results Ready</span>
+          </div>
+          <div class="form-row">
+            <div><div class="text-xs text-muted">Ordered by</div><div class="fw-600">Dr. ${r.doctor_name}</div></div>
+            <div><div class="text-xs text-muted">Test Date</div><div class="fw-600">${fmtDate(r.date)}</div></div>
+            <div><div class="text-xs text-muted">Lab Name</div><div class="fw-600">${r.lab_name || '—'}</div></div>
+            <div><div class="text-xs text-muted">Sample Type</div><div class="fw-600">${r.sample_type || '—'}</div></div>
+          </div>
+        </div>
+        <h4 class="fw-700 mb-3">Test Parameters</h4>
+        ${(r.results || []).map(res => `
+          <div class="lab-result">
+            <div>
+              <div class="lr-name">${res.parameter}</div>
+              <div class="lr-ref">Reference: ${res.reference_range} ${res.unit}</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="lr-value ${res.flag === 'High' ? 'text-danger' : res.flag === 'Low' ? 'text-warning' : ''}">${res.value} ${res.unit}</div>
+              <span class="badge ${res.flag ? 'badge-danger' : 'badge-success'}" style="font-size:10px;">${res.flag || 'Normal'}</span>
+            </div>
+          </div>`).join('')}
+        ${r.remarks ? `<div class="alert alert-warning" style="margin-top:16px;"><span>🩺</span> <strong>Remarks:</strong> ${r.remarks}</div>` : ''}`;
+      document.getElementById('download-report-btn').onclick = () => r.file_url ? window.open(r.file_url) : toast('No downloadable file', 'warning');
+    } catch (err) {
+      document.getElementById('reportModalBody').innerHTML = `<p class="text-danger">${err.message}</p>`;
+    }
+  }
+
+  loadReports();
+</script>
+</body>
+</html>

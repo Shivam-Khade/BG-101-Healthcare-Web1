@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — MediConnect Patient</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="app-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-brand"><span class="logo-icon">🏥</span> MediConnect</div>
+      <div class="logo-sub">Patient Portal</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Main</div>
+      <a href="dashboard.html" class="nav-link active"><span class="nav-icon">🏠</span> Dashboard</a>
+      <a href="doctors.html" class="nav-link"><span class="nav-icon">👨‍⚕️</span> Find Doctors</a>
+      <a href="appointments.html" class="nav-link"><span class="nav-icon">📅</span> Appointments</a>
+      <div class="nav-group-label">Health</div>
+      <a href="medical-records.html" class="nav-link"><span class="nav-icon">📁</span> Medical Records</a>
+      <a href="prescriptions.html" class="nav-link"><span class="nav-icon">💊</span> Prescriptions</a>
+      <a href="lab-reports.html" class="nav-link"><span class="nav-icon">🔬</span> Lab Reports</a>
+      <a href="pharmacy.html" class="nav-link"><span class="nav-icon">🏪</span> Pharmacy</a>
+      <div class="nav-group-label">Account</div>
+      <a href="billing.html" class="nav-link"><span class="nav-icon">💳</span> Billing</a>
+      <a href="profile.html" class="nav-link"><span class="nav-icon">👤</span> Profile</a>
+      <a href="notifications.html" class="nav-link"><span class="nav-icon">🔔</span> Notifications <span class="nav-badge">3</span></a>
+      <a href="emergency.html" class="nav-link"><span class="nav-icon">🆘</span> Emergency SOS</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user" onclick="logout()">
+        <div class="s-avatar" id="sidebar-avatar">P</div>
+        <div>
+          <div class="s-user-name" id="sidebar-user-name">Patient</div>
+          <div class="s-user-role">Sign out →</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <header class="top-bar">
+      <div class="top-bar-title">Dashboard</div>
+      <div class="top-bar-actions">
+        <button class="icon-btn" onclick="window.location.href='notifications.html'" title="Notifications">🔔<span class="notif-dot"></span></button>
+        <button class="icon-btn" onclick="window.location.href='profile.html'" title="Profile">👤</button>
+      </div>
+    </header>
+
+    <div class="page-content">
+
+      <!-- Welcome Banner -->
+      <div class="alert alert-info mb-6" style="margin-bottom:22px;">
+        <span>👋</span>
+        <div><strong>Good morning!</strong> You have <strong>2 upcoming appointments</strong> this week. Stay on top of your health!</div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon si-blue">📅</div>
+          <div class="stat-info">
+            <div class="stat-val" id="stat-appts">—</div>
+            <div class="stat-lbl">Upcoming Appointments</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon si-green">💊</div>
+          <div class="stat-info">
+            <div class="stat-val" id="stat-rx">—</div>
+            <div class="stat-lbl">Active Prescriptions</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon si-orange">🔬</div>
+          <div class="stat-info">
+            <div class="stat-val" id="stat-labs">—</div>
+            <div class="stat-lbl">Lab Reports</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon si-red">💳</div>
+          <div class="stat-info">
+            <div class="stat-val" id="stat-bills">—</div>
+            <div class="stat-lbl">Pending Bills</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Upcoming Appointments -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📅 Upcoming Appointments</span>
+            <a href="appointments.html" class="btn btn-outline btn-sm">View All</a>
+          </div>
+          <div class="card-body" id="upcoming-appts">
+            <div class="empty-state">
+              <div class="empty-icon">📅</div>
+              <h3>No upcoming appointments</h3>
+              <p>Book an appointment with a doctor</p>
+              <a href="doctors.html" class="btn btn-primary btn-sm">Find Doctors</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Prescriptions -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">💊 Active Prescriptions</span>
+            <a href="prescriptions.html" class="btn btn-outline btn-sm">View All</a>
+          </div>
+          <div class="card-body" id="active-rx">
+            <div class="empty-state">
+              <div class="empty-icon">💊</div>
+              <h3>No active prescriptions</h3>
+              <p>Your current prescriptions will appear here</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Recent Lab Reports -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🔬 Recent Lab Reports</span>
+            <a href="lab-reports.html" class="btn btn-outline btn-sm">View All</a>
+          </div>
+          <div class="card-body" id="recent-labs">
+            <div class="empty-state">
+              <div class="empty-icon">🔬</div>
+              <h3>No lab reports yet</h3>
+              <p>Your test results will appear here</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Health Summary -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">❤️ Health Summary</span>
+            <a href="profile.html" class="btn btn-outline btn-sm">Edit</a>
+          </div>
+          <div class="card-body" id="health-summary">
+            <div class="form-group">
+              <div class="flex justify-between mb-1">
+                <span class="text-sm fw-600">Blood Pressure</span>
+                <span class="text-sm text-muted" id="bp-val">— mmHg</span>
+              </div>
+              <div class="health-bar"><div class="hb-fill hb-good" style="width:72%"></div></div>
+            </div>
+            <div class="form-group">
+              <div class="flex justify-between mb-1">
+                <span class="text-sm fw-600">Blood Sugar</span>
+                <span class="text-sm text-muted" id="bs-val">— mg/dL</span>
+              </div>
+              <div class="health-bar"><div class="hb-fill hb-mid" style="width:58%"></div></div>
+            </div>
+            <div class="form-group">
+              <div class="flex justify-between mb-1">
+                <span class="text-sm fw-600">Heart Rate</span>
+                <span class="text-sm text-muted" id="hr-val">— bpm</span>
+              </div>
+              <div class="health-bar"><div class="hb-fill hb-good" style="width:80%"></div></div>
+            </div>
+            <div class="divider"></div>
+            <div class="flex gap-3" style="flex-wrap:wrap;">
+              <span class="pill">🩸 Blood Group: <strong id="blood-grp">—</strong></span>
+              <span class="pill">⚖️ Weight: <strong id="weight">—</strong></span>
+              <span class="pill">📏 Height: <strong id="height">—</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="js/app.js"></script>
+<script>
+  function logout() { auth.clear(); window.location.href = 'index.html'; }
+
+  // GET /api/dashboard  →  { stats, upcoming_appointments, active_prescriptions, recent_labs, health_summary }
+  async function loadDashboard() {
+    try {
+      const data = await GET('/dashboard');
+      document.getElementById('stat-appts').textContent = data.stats.upcoming_appointments ?? 0;
+      document.getElementById('stat-rx').textContent = data.stats.active_prescriptions ?? 0;
+      document.getElementById('stat-labs').textContent = data.stats.lab_reports ?? 0;
+      document.getElementById('stat-bills').textContent = data.stats.pending_bills ?? 0;
+
+      if (data.health_summary) {
+        const hs = data.health_summary;
+        document.getElementById('bp-val').textContent = hs.blood_pressure || '—';
+        document.getElementById('bs-val').textContent = hs.blood_sugar || '—';
+        document.getElementById('hr-val').textContent = hs.heart_rate || '—';
+        document.getElementById('blood-grp').textContent = hs.blood_group || '—';
+        document.getElementById('weight').textContent = hs.weight || '—';
+        document.getElementById('height').textContent = hs.height || '—';
+      }
+
+      if (data.upcoming_appointments?.length) {
+        document.getElementById('upcoming-appts').innerHTML = data.upcoming_appointments.slice(0, 3).map(a => `
+          <div class="appt-card" style="margin-bottom:10px;">
+            <div class="appt-date-block">
+              <div class="appt-day">${new Date(a.date).getDate()}</div>
+              <div class="appt-month">${new Date(a.date).toLocaleString('default',{month:'short'})}</div>
+            </div>
+            <div class="appt-info">
+              <div class="appt-doctor">${a.doctor_name}</div>
+              <div class="appt-spec">${a.specialty}</div>
+              <div class="appt-meta"><span>🕐 ${a.time}</span><span>📍 ${a.type}</span></div>
+            </div>
+            <span class="badge badge-primary">${a.status}</span>
+          </div>`).join('');
+      }
+
+      if (data.active_prescriptions?.length) {
+        document.getElementById('active-rx').innerHTML = data.active_prescriptions.slice(0, 3).map(rx => `
+          <div class="rx-card" style="padding:14px;margin-bottom:10px;">
+            <div class="fw-700">${rx.medicines?.[0]?.name || 'Prescription'}</div>
+            <div class="text-sm text-muted">Dr. ${rx.doctor_name} · ${fmtDate(rx.date)}</div>
+          </div>`).join('');
+      }
+
+      if (data.recent_labs?.length) {
+        document.getElementById('recent-labs').innerHTML = data.recent_labs.slice(0, 3).map(l => `
+          <div class="flex justify-between items-center" style="padding:10px 0;border-bottom:1px solid var(--border);">
+            <div><div class="fw-600">${l.test_name}</div><div class="text-xs text-muted">${fmtDate(l.date)}</div></div>
+            <span class="badge ${l.status === 'Normal' ? 'badge-success' : 'badge-danger'}">${l.status}</span>
+          </div>`).join('');
+      }
+
+    } catch (err) {
+      console.error('Dashboard load failed:', err.message);
+    }
+  }
+
+  loadDashboard();
+</script>
+</body>
+</html>

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Appointments — MediConnect Patient</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="logo-brand"><span class="logo-icon">🏥</span> MediConnect</div><div class="logo-sub">Patient Portal</div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Main</div>
+      <a href="dashboard.html" class="nav-link"><span class="nav-icon">🏠</span> Dashboard</a>
+      <a href="doctors.html" class="nav-link"><span class="nav-icon">👨‍⚕️</span> Find Doctors</a>
+      <a href="appointments.html" class="nav-link active"><span class="nav-icon">📅</span> Appointments</a>
+      <div class="nav-group-label">Health</div>
+      <a href="medical-records.html" class="nav-link"><span class="nav-icon">📁</span> Medical Records</a>
+      <a href="prescriptions.html" class="nav-link"><span class="nav-icon">💊</span> Prescriptions</a>
+      <a href="lab-reports.html" class="nav-link"><span class="nav-icon">🔬</span> Lab Reports</a>
+      <a href="pharmacy.html" class="nav-link"><span class="nav-icon">🏪</span> Pharmacy</a>
+      <div class="nav-group-label">Account</div>
+      <a href="billing.html" class="nav-link"><span class="nav-icon">💳</span> Billing</a>
+      <a href="profile.html" class="nav-link"><span class="nav-icon">👤</span> Profile</a>
+      <a href="notifications.html" class="nav-link"><span class="nav-icon">🔔</span> Notifications</a>
+      <a href="emergency.html" class="nav-link"><span class="nav-icon">🆘</span> Emergency SOS</a>
+    </nav>
+    <div class="sidebar-footer"><div class="sidebar-user" onclick="logout()"><div class="s-avatar" id="sidebar-avatar">P</div><div><div class="s-user-name" id="sidebar-user-name">Patient</div><div class="s-user-role">Sign out →</div></div></div></div>
+  </aside>
+
+  <main class="main-content">
+    <header class="top-bar">
+      <div class="top-bar-title">My Appointments</div>
+      <div class="top-bar-actions">
+        <button class="btn btn-primary btn-sm" onclick="window.location.href='doctors.html'">+ Book New</button>
+        <button class="icon-btn" onclick="window.location.href='notifications.html'">🔔</button>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="tabs page-tabs">
+        <button class="tab-btn active" data-tab="tab-upcoming">Upcoming</button>
+        <button class="tab-btn" data-tab="tab-past">Past</button>
+        <button class="tab-btn" data-tab="tab-cancelled">Cancelled</button>
+      </div>
+
+      <!-- Upcoming -->
+      <div id="tab-upcoming" class="tab-pane active">
+        <div id="upcoming-list">
+          <div class="empty-state"><div class="empty-icon">📅</div><h3>No upcoming appointments</h3><p>Book an appointment with a doctor to get started</p><a href="doctors.html" class="btn btn-primary">Find Doctors</a></div>
+        </div>
+      </div>
+
+      <!-- Past -->
+      <div id="tab-past" class="tab-pane">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Past Appointments</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Doctor</th><th>Specialty</th><th>Date</th><th>Type</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="past-tbody">
+                <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">No past appointments found</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cancelled -->
+      <div id="tab-cancelled" class="tab-pane">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Cancelled Appointments</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Doctor</th><th>Date & Time</th><th>Reason</th><th>Cancelled On</th></tr></thead>
+              <tbody id="cancelled-tbody">
+                <tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text-muted);">No cancelled appointments</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Reschedule Modal -->
+<div class="modal-overlay" id="rescheduleModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Reschedule Appointment</span><button class="modal-close" onclick="closeModal('rescheduleModal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="rs-appt-id" />
+      <div class="form-group"><label class="form-label">New Date</label><input type="date" class="form-control" id="rs-date" /></div>
+      <div class="form-group"><label class="form-label">New Time Slot</label>
+        <select class="form-control" id="rs-time">
+          <option>09:00 AM</option><option>10:00 AM</option><option>11:00 AM</option>
+          <option>02:00 PM</option><option>03:00 PM</option><option>04:00 PM</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Reason for Reschedule</label><textarea class="form-control" id="rs-reason" placeholder="Optional reason…"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('rescheduleModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitReschedule()">Confirm Reschedule</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cancel Confirm Modal -->
+<div class="modal-overlay" id="cancelModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Cancel Appointment</span><button class="modal-close" onclick="closeModal('cancelModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="alert alert-warning"><span>⚠️</span> Are you sure you want to cancel this appointment? This action cannot be undone.</div>
+      <input type="hidden" id="cancel-appt-id" />
+      <div class="form-group"><label class="form-label">Reason for Cancellation</label>
+        <select class="form-control" id="cancel-reason">
+          <option>Personal emergency</option><option>Schedule conflict</option>
+          <option>Feeling better</option><option>Doctor unavailable</option><option>Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('cancelModal')">Keep Appointment</button>
+      <button class="btn btn-danger" onclick="submitCancel()">Yes, Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="js/app.js"></script>
+<script>
+  function logout() { auth.clear(); window.location.href = 'index.html'; }
+
+  // GET /api/appointments?status=upcoming
+  async function loadUpcoming() {
+    try {
+      const data = await GET('/appointments?status=upcoming');
+      const appts = Array.isArray(data) ? data : data.appointments || [];
+      if (!appts.length) return;
+      document.getElementById('upcoming-list').innerHTML = appts.map(a => `
+        <div class="appt-card">
+          <div class="appt-date-block">
+            <div class="appt-day">${new Date(a.date).getDate()}</div>
+            <div class="appt-month">${new Date(a.date).toLocaleString('default',{month:'short'})}</div>
+          </div>
+          <div class="appt-info">
+            <div class="appt-doctor">${a.doctor_name}</div>
+            <div class="appt-spec">${a.specialty}</div>
+            <div class="appt-meta">
+              <span>🕐 ${a.time}</span>
+              <span>📍 ${a.type}</span>
+              <span>📋 ${a.reason || 'General consultation'}</span>
+            </div>
+          </div>
+          <div class="appt-actions">
+            <span class="badge badge-primary" style="margin-right:8px;">${a.status}</span>
+            <button class="btn btn-secondary btn-sm" onclick="openReschedule(${a.id})">Reschedule</button>
+            <button class="btn btn-danger btn-sm" onclick="openCancel(${a.id})">Cancel</button>
+          </div>
+        </div>`).join('');
+    } catch (err) { console.error('Load upcoming failed:', err.message); }
+  }
+
+  // GET /api/appointments?status=past
+  async function loadPast() {
+    try {
+      const data = await GET('/appointments?status=past');
+      const appts = Array.isArray(data) ? data : data.appointments || [];
+      if (!appts.length) return;
+      document.getElementById('past-tbody').innerHTML = appts.map(a => `
+        <tr>
+          <td><div class="fw-600">${a.doctor_name}</div></td>
+          <td>${a.specialty}</td>
+          <td>${fmtDate(a.date)} · ${a.time}</td>
+          <td><span class="pill">${a.type}</span></td>
+          <td><span class="badge badge-success">Completed</span></td>
+          <td><button class="btn btn-secondary btn-sm" onclick="viewSummary(${a.id})">Summary</button></td>
+        </tr>`).join('');
+    } catch (err) {}
+  }
+
+  // GET /api/appointments?status=cancelled
+  async function loadCancelled() {
+    try {
+      const data = await GET('/appointments?status=cancelled');
+      const appts = Array.isArray(data) ? data : data.appointments || [];
+      if (!appts.length) return;
+      document.getElementById('cancelled-tbody').innerHTML = appts.map(a => `
+        <tr>
+          <td><div class="fw-600">${a.doctor_name}</div></td>
+          <td>${fmtDate(a.date)} · ${a.time}</td>
+          <td>${a.cancel_reason || '—'}</td>
+          <td>${fmtDate(a.cancelled_at)}</td>
+        </tr>`).join('');
+    } catch (err) {}
+  }
+
+  function openReschedule(id) {
+    document.getElementById('rs-appt-id').value = id;
+    document.getElementById('rs-date').min = new Date().toISOString().split('T')[0];
+    openModal('rescheduleModal');
+  }
+
+  // PUT /api/appointments/:id
+  async function submitReschedule() {
+    const id = document.getElementById('rs-appt-id').value;
+    const payload = {
+      date: document.getElementById('rs-date').value,
+      time: document.getElementById('rs-time').value,
+      reason: document.getElementById('rs-reason').value
+    };
+    try {
+      await PUT(`/appointments/${id}`, payload);
+      closeModal('rescheduleModal');
+      toast('Appointment rescheduled!', 'success');
+      loadUpcoming();
+    } catch (err) { toast(err.message || 'Failed to reschedule', 'error'); }
+  }
+
+  function openCancel(id) {
+    document.getElementById('cancel-appt-id').value = id;
+    openModal('cancelModal');
+  }
+
+  // DELETE /api/appointments/:id
+  async function submitCancel() {
+    const id = document.getElementById('cancel-appt-id').value;
+    try {
+      await DEL(`/appointments/${id}`);
+      closeModal('cancelModal');
+      toast('Appointment cancelled', 'warning');
+      loadUpcoming();
+    } catch (err) { toast(err.message || 'Failed to cancel', 'error'); }
+  }
+
+  // GET /api/appointments/:id/summary
+  async function viewSummary(id) {
+    try {
+      const d = await GET(`/appointments/${id}/summary`);
+      toast(`Diagnosis: ${d.diagnosis || 'N/A'}`, 'default');
+    } catch (err) {}
+  }
+
+  initTabs('.page-tabs');
+  loadUpcoming();
+  loadPast();
+  loadCancelled();
+</script>
+</body>
+</html>

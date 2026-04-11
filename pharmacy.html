@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pharmacy — MediConnect Patient</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="logo-brand"><span class="logo-icon">🏥</span> MediConnect</div><div class="logo-sub">Patient Portal</div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Main</div>
+      <a href="dashboard.html" class="nav-link"><span class="nav-icon">🏠</span> Dashboard</a>
+      <a href="doctors.html" class="nav-link"><span class="nav-icon">👨‍⚕️</span> Find Doctors</a>
+      <a href="appointments.html" class="nav-link"><span class="nav-icon">📅</span> Appointments</a>
+      <div class="nav-group-label">Health</div>
+      <a href="medical-records.html" class="nav-link"><span class="nav-icon">📁</span> Medical Records</a>
+      <a href="prescriptions.html" class="nav-link"><span class="nav-icon">💊</span> Prescriptions</a>
+      <a href="lab-reports.html" class="nav-link"><span class="nav-icon">🔬</span> Lab Reports</a>
+      <a href="pharmacy.html" class="nav-link active"><span class="nav-icon">🏪</span> Pharmacy</a>
+      <div class="nav-group-label">Account</div>
+      <a href="billing.html" class="nav-link"><span class="nav-icon">💳</span> Billing</a>
+      <a href="profile.html" class="nav-link"><span class="nav-icon">👤</span> Profile</a>
+      <a href="notifications.html" class="nav-link"><span class="nav-icon">🔔</span> Notifications</a>
+      <a href="emergency.html" class="nav-link"><span class="nav-icon">🆘</span> Emergency SOS</a>
+    </nav>
+    <div class="sidebar-footer"><div class="sidebar-user" onclick="logout()"><div class="s-avatar" id="sidebar-avatar">P</div><div><div class="s-user-name" id="sidebar-user-name">Patient</div><div class="s-user-role">Sign out →</div></div></div></div>
+  </aside>
+
+  <main class="main-content">
+    <header class="top-bar">
+      <div class="top-bar-title">Pharmacy</div>
+      <div class="top-bar-actions">
+        <button class="btn btn-outline btn-sm" onclick="openModal('cartModal')">🛒 Cart <span id="cart-count" class="nav-badge" style="position:static;margin-left:4px;">0</span></button>
+        <button class="btn btn-secondary btn-sm" onclick="window.location.href='#orders-section'">My Orders</button>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <!-- Search -->
+      <div class="filter-bar">
+        <div class="search-wrap" style="max-width:480px;">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="medSearch" placeholder="Search medicines by name or generic name…" />
+        </div>
+        <select class="form-control" id="categoryFilter" style="width:auto;min-width:180px;" onchange="loadMedicines()">
+          <option value="">All Categories</option>
+          <option>Antibiotics</option><option>Painkillers</option><option>Vitamins</option>
+          <option>Antidiabetic</option><option>Cardiac</option><option>Antacids</option>
+          <option>Antihistamines</option><option>Antiseptics</option>
+        </select>
+        <button class="btn btn-primary" onclick="loadMedicines()">Search</button>
+      </div>
+
+      <!-- Medicines Grid -->
+      <div class="pharmacy-grid" id="medicines-grid">
+        <div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">⏳</div><h3>Loading medicines…</h3></div>
+      </div>
+
+      <!-- My Orders -->
+      <div id="orders-section" style="margin-top:32px;">
+        <div class="card">
+          <div class="card-header"><span class="card-title">📦 My Orders</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Order ID</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+              <tbody id="orders-tbody">
+                <tr><td colspan="6" style="text-align:center;padding:36px;color:var(--text-muted);">No orders yet</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Cart Modal -->
+<div class="modal-overlay" id="cartModal">
+  <div class="modal modal-lg">
+    <div class="modal-header"><span class="modal-title">🛒 Your Cart</span><button class="modal-close" onclick="closeModal('cartModal')">✕</button></div>
+    <div class="modal-body">
+      <div id="cart-items">
+        <div class="empty-state" style="padding:32px 0;"><div class="empty-icon">🛒</div><h3>Cart is empty</h3></div>
+      </div>
+      <div id="cart-summary" style="display:none;margin-top:16px;">
+        <div class="divider"></div>
+        <div class="flex justify-between fw-700" style="font-size:16px;margin-bottom:16px;">
+          <span>Total:</span><span id="cart-total">₹0</span>
+        </div>
+        <div class="form-group"><label class="form-label">Delivery Address</label><textarea class="form-control" id="delivery-address" placeholder="Enter full delivery address…" rows="2"></textarea></div>
+        <div class="form-group"><label class="form-label">Payment Method</label>
+          <select class="form-control" id="payment-method">
+            <option value="cod">Cash on Delivery</option>
+            <option value="online">Online Payment</option>
+            <option value="upi">UPI</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('cartModal')">Continue Shopping</button>
+      <button class="btn btn-primary" onclick="placeOrder()">Place Order</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="js/app.js"></script>
+<script>
+  function logout() { auth.clear(); window.location.href = 'index.html'; }
+
+  let cart = [];
+
+  function updateCartUI() {
+    document.getElementById('cart-count').textContent = cart.reduce((s, i) => s + i.qty, 0);
+    if (!cart.length) {
+      document.getElementById('cart-items').innerHTML = '<div class="empty-state" style="padding:32px 0;"><div class="empty-icon">🛒</div><h3>Cart is empty</h3></div>';
+      document.getElementById('cart-summary').style.display = 'none';
+      return;
+    }
+    const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    document.getElementById('cart-total').textContent = `₹${total.toFixed(2)}`;
+    document.getElementById('cart-summary').style.display = 'block';
+    document.getElementById('cart-items').innerHTML = cart.map((item, idx) => `
+      <div class="flex items-center gap-3" style="padding:12px 0;border-bottom:1px solid var(--border);">
+        <span style="font-size:24px;">💊</span>
+        <div style="flex:1;">
+          <div class="fw-600">${item.name}</div>
+          <div class="text-muted text-sm">₹${item.price} each</div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button class="btn btn-secondary btn-sm" onclick="updateQty(${idx}, -1)">−</button>
+          <span class="fw-700">${item.qty}</span>
+          <button class="btn btn-secondary btn-sm" onclick="updateQty(${idx}, 1)">+</button>
+        </div>
+        <div class="fw-700" style="min-width:60px;text-align:right;">₹${(item.price * item.qty).toFixed(2)}</div>
+        <button class="btn btn-danger btn-sm" onclick="removeFromCart(${idx})">✕</button>
+      </div>`).join('');
+  }
+
+  function addToCart(med) {
+    const existing = cart.find(i => i.id === med.id);
+    if (existing) existing.qty++;
+    else cart.push({ ...med, qty: 1 });
+    updateCartUI();
+    toast(`${med.name} added to cart`, 'success');
+  }
+
+  function updateQty(idx, delta) {
+    cart[idx].qty += delta;
+    if (cart[idx].qty <= 0) cart.splice(idx, 1);
+    updateCartUI();
+  }
+
+  function removeFromCart(idx) {
+    cart.splice(idx, 1);
+    updateCartUI();
+  }
+
+  // GET /api/medicines?search=&category=
+  async function loadMedicines() {
+    const search = document.getElementById('medSearch').value;
+    const category = document.getElementById('categoryFilter').value;
+    document.getElementById('medicines-grid').innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">⏳</div><h3>Loading…</h3></div>';
+    try {
+      const params = new URLSearchParams({ search, category }).toString();
+      const data = await GET(`/medicines?${params}`);
+      const meds = Array.isArray(data) ? data : data.medicines || [];
+      if (!meds.length) {
+        document.getElementById('medicines-grid').innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">🔍</div><h3>No medicines found</h3></div>';
+        return;
+      }
+      document.getElementById('medicines-grid').innerHTML = meds.map(m => `
+        <div class="med-card">
+          <div class="med-icon">💊</div>
+          <div class="med-name">${m.name}</div>
+          <div class="med-generic">${m.generic_name || ''} · ${m.dosage_form || ''}</div>
+          <div class="med-price">₹${m.price}</div>
+          <div class="med-stock ${m.in_stock ? 'text-success' : 'text-danger'}">${m.in_stock ? '✅ In Stock' : '❌ Out of Stock'}</div>
+          <div style="margin-top:12px;">
+            <button class="btn btn-primary w-full" onclick='addToCart(${JSON.stringify(m).replace(/"/g,"&quot;")})' ${!m.in_stock ? 'disabled' : ''}>
+              Add to Cart
+            </button>
+          </div>
+        </div>`).join('');
+    } catch (err) {
+      document.getElementById('medicines-grid').innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">⚠️</div><h3>${err.message}</h3></div>`;
+    }
+  }
+
+  // POST /api/orders
+  async function placeOrder() {
+    if (!cart.length) { toast('Cart is empty', 'error'); return; }
+    const address = document.getElementById('delivery-address').value;
+    if (!address) { toast('Enter delivery address', 'error'); return; }
+    const payload = {
+      items: cart.map(i => ({ medicine_id: i.id, qty: i.qty })),
+      address,
+      payment_method: document.getElementById('payment-method').value
+    };
+    try {
+      const data = await POST('/orders', payload);
+      closeModal('cartModal');
+      cart = [];
+      updateCartUI();
+      toast(`Order #${data.order_id} placed successfully!`, 'success');
+      loadOrders();
+    } catch (err) { toast(err.message || 'Order failed', 'error'); }
+  }
+
+  // GET /api/orders
+  async function loadOrders() {
+    try {
+      const data = await GET('/orders');
+      const orders = Array.isArray(data) ? data : data.orders || [];
+      if (!orders.length) return;
+      document.getElementById('orders-tbody').innerHTML = orders.map(o => `
+        <tr>
+          <td class="fw-600">#${o.id}</td>
+          <td>${o.item_count} item(s)</td>
+          <td class="fw-700 text-primary">₹${o.total}</td>
+          <td><span class="badge ${o.status === 'delivered' ? 'badge-success' : o.status === 'cancelled' ? 'badge-danger' : 'badge-warning'}">${o.status}</span></td>
+          <td>${fmtDate(o.created_at)}</td>
+          <td><button class="btn btn-secondary btn-sm" onclick="viewOrder(${o.id})">Details</button></td>
+        </tr>`).join('');
+    } catch (err) {}
+  }
+
+  loadMedicines();
+  loadOrders();
+  document.getElementById('medSearch').addEventListener('keydown', e => { if (e.key === 'Enter') loadMedicines(); });
+</script>
+</body>
+</html>

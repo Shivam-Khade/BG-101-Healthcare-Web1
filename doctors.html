@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Find Doctors — MediConnect Patient</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="logo-brand"><span class="logo-icon">🏥</span> MediConnect</div><div class="logo-sub">Patient Portal</div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Main</div>
+      <a href="dashboard.html" class="nav-link"><span class="nav-icon">🏠</span> Dashboard</a>
+      <a href="doctors.html" class="nav-link active"><span class="nav-icon">👨‍⚕️</span> Find Doctors</a>
+      <a href="appointments.html" class="nav-link"><span class="nav-icon">📅</span> Appointments</a>
+      <div class="nav-group-label">Health</div>
+      <a href="medical-records.html" class="nav-link"><span class="nav-icon">📁</span> Medical Records</a>
+      <a href="prescriptions.html" class="nav-link"><span class="nav-icon">💊</span> Prescriptions</a>
+      <a href="lab-reports.html" class="nav-link"><span class="nav-icon">🔬</span> Lab Reports</a>
+      <a href="pharmacy.html" class="nav-link"><span class="nav-icon">🏪</span> Pharmacy</a>
+      <div class="nav-group-label">Account</div>
+      <a href="billing.html" class="nav-link"><span class="nav-icon">💳</span> Billing</a>
+      <a href="profile.html" class="nav-link"><span class="nav-icon">👤</span> Profile</a>
+      <a href="notifications.html" class="nav-link"><span class="nav-icon">🔔</span> Notifications</a>
+      <a href="emergency.html" class="nav-link"><span class="nav-icon">🆘</span> Emergency SOS</a>
+    </nav>
+    <div class="sidebar-footer"><div class="sidebar-user" onclick="logout()"><div class="s-avatar" id="sidebar-avatar">P</div><div><div class="s-user-name" id="sidebar-user-name">Patient</div><div class="s-user-role">Sign out →</div></div></div></div>
+  </aside>
+
+  <main class="main-content">
+    <header class="top-bar">
+      <div class="top-bar-title">Find Doctors</div>
+      <div class="top-bar-actions">
+        <button class="icon-btn" onclick="window.location.href='notifications.html'">🔔</button>
+        <button class="icon-btn" onclick="window.location.href='profile.html'">👤</button>
+      </div>
+    </header>
+
+    <div class="page-content">
+
+      <!-- Filter Bar -->
+      <div class="card mb-22" style="margin-bottom:20px;">
+        <div class="card-body">
+          <div class="filter-bar" style="margin-bottom:0;">
+            <div class="search-wrap">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="searchInput" placeholder="Search by name or specialty…" />
+            </div>
+            <select class="form-control" id="specialtyFilter" style="width:auto;min-width:180px;">
+              <option value="">All Specialties</option>
+            </select>
+            <select class="form-control" id="locationFilter" style="width:auto;min-width:160px;">
+              <option value="">All Locations</option>
+              <option>Online</option><option>In-clinic</option>
+            </select>
+            <select class="form-control" id="sortFilter" style="width:auto;min-width:160px;">
+              <option value="rating">Sort: Rating</option>
+              <option value="fee_asc">Fee: Low to High</option>
+              <option value="fee_desc">Fee: High to Low</option>
+              <option value="experience">Experience</option>
+            </select>
+            <button class="btn btn-primary" onclick="loadDoctors()">Search</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results Count -->
+      <div class="flex justify-between items-center mb-4" style="margin-bottom:16px;">
+        <span class="text-light text-sm"><span id="result-count">0</span> doctors found</span>
+      </div>
+
+      <!-- Doctors Grid -->
+      <div class="doctors-grid" id="doctorsGrid">
+        <div class="empty-state" style="grid-column:1/-1;">
+          <div class="empty-icon">👨‍⚕️</div>
+          <h3>Loading doctors…</h3>
+          <p>Please wait while we fetch available doctors</p>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Book Appointment Modal -->
+<div class="modal-overlay" id="bookModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Book Appointment</span>
+      <button class="modal-close" onclick="closeModal('bookModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="booking-doctor-info" style="display:flex;align-items:center;gap:14px;padding:16px;background:var(--bg);border-radius:10px;margin-bottom:20px;">
+        <div style="font-size:32px;">👨‍⚕️</div>
+        <div>
+          <div class="fw-700" id="book-doctor-name">Dr. Name</div>
+          <div class="text-sm text-muted" id="book-doctor-spec">Specialty</div>
+        </div>
+      </div>
+      <form id="bookForm">
+        <input type="hidden" id="book-doctor-id" />
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Appointment Date</label>
+            <input type="date" class="form-control" id="book-date" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Time Slot</label>
+            <select class="form-control" id="book-time" required>
+              <option value="">Select date first</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Consultation Type</label>
+          <select class="form-control" id="book-type">
+            <option value="in-clinic">In-Clinic</option>
+            <option value="online">Online / Telemedicine</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reason for Visit</label>
+          <textarea class="form-control" id="book-reason" placeholder="Briefly describe your symptoms or reason…" required></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('bookModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitBooking()">Confirm Booking</button>
+    </div>
+  </div>
+</div>
+
+<!-- Doctor Detail Modal -->
+<div class="modal-overlay" id="doctorModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title">Doctor Profile</span>
+      <button class="modal-close" onclick="closeModal('doctorModal')">✕</button>
+    </div>
+    <div class="modal-body" id="doctorDetailBody">Loading…</div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('doctorModal')">Close</button>
+      <button class="btn btn-primary" id="modal-book-btn">Book Appointment</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="js/app.js"></script>
+<script>
+  function logout() { auth.clear(); window.location.href = 'index.html'; }
+
+  let currentDoctor = null;
+
+  // GET /api/doctors/specialties
+  async function loadSpecialties() {
+    try {
+      const data = await GET('/doctors/specialties');
+      const sel = document.getElementById('specialtyFilter');
+      data.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id || s.name; opt.textContent = s.name;
+        sel.appendChild(opt);
+      });
+    } catch (e) {}
+  }
+
+  // GET /api/doctors?search=&specialty=&location=&sort=
+  async function loadDoctors() {
+    const search = document.getElementById('searchInput').value;
+    const specialty = document.getElementById('specialtyFilter').value;
+    const location = document.getElementById('locationFilter').value;
+    const sort = document.getElementById('sortFilter').value;
+
+    document.getElementById('doctorsGrid').innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">⏳</div><h3>Loading…</h3></div>';
+
+    try {
+      const params = new URLSearchParams({ search, specialty, location, sort }).toString();
+      const data = await GET(`/doctors?${params}`);
+      const doctors = Array.isArray(data) ? data : data.doctors || [];
+      document.getElementById('result-count').textContent = doctors.length;
+
+      if (!doctors.length) {
+        document.getElementById('doctorsGrid').innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">🔍</div><h3>No doctors found</h3><p>Try adjusting your filters</p></div>';
+        return;
+      }
+
+      document.getElementById('doctorsGrid').innerHTML = doctors.map(d => `
+        <div class="doctor-card">
+          <div class="dc-head">
+            <div class="dc-avatar">👨‍⚕️</div>
+            <div>
+              <div class="dc-name">${d.name}</div>
+              <div class="dc-spec">${d.specialty}</div>
+              <div class="dc-exp">${d.experience || ''} years experience</div>
+              <div class="dc-rating">${'★'.repeat(Math.round(d.rating || 4))}${'☆'.repeat(5 - Math.round(d.rating || 4))} ${d.rating || '4.0'}</div>
+            </div>
+          </div>
+          <div class="dc-tags">
+            ${(d.tags || [d.specialty]).map(t => `<span class="dc-tag">${t}</span>`).join('')}
+          </div>
+          <div class="dc-footer">
+            <div class="dc-fee">₹${d.fee || '—'} <span>/ session</span></div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-secondary btn-sm" onclick="viewDoctor(${d.id})">View</button>
+              <button class="btn btn-primary btn-sm" onclick="openBooking(${JSON.stringify(d).replace(/"/g,'&quot;')})">Book</button>
+            </div>
+          </div>
+          <div class="dc-avail" style="margin-top:10px;">✅ Available: ${d.availability || 'Mon–Fri'}</div>
+        </div>`).join('');
+    } catch (err) {
+      document.getElementById('doctorsGrid').innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">⚠️</div><h3>Failed to load doctors</h3><p>${err.message}</p></div>`;
+    }
+  }
+
+  function openBooking(doctor) {
+    currentDoctor = doctor;
+    document.getElementById('book-doctor-id').value = doctor.id;
+    document.getElementById('book-doctor-name').textContent = doctor.name;
+    document.getElementById('book-doctor-spec').textContent = doctor.specialty;
+    document.getElementById('book-date').min = new Date().toISOString().split('T')[0];
+    openModal('bookModal');
+  }
+
+  // GET /api/doctors/:id/slots?date=  (when date changes)
+  document.addEventListener('change', async (e) => {
+    if (e.target.id === 'book-date' && currentDoctor) {
+      const date = e.target.value;
+      const timeEl = document.getElementById('book-time');
+      timeEl.innerHTML = '<option>Loading slots…</option>';
+      try {
+        const data = await GET(`/doctors/${currentDoctor.id}/slots?date=${date}`);
+        const slots = Array.isArray(data) ? data : data.slots || [];
+        timeEl.innerHTML = slots.length
+          ? slots.map(s => `<option value="${s.time}">${s.time} ${s.available ? '' : '(Full)'}</option>`).join('')
+          : '<option>No slots available</option>';
+      } catch {
+        timeEl.innerHTML = '<option>09:00 AM</option><option>10:00 AM</option><option>11:00 AM</option><option>02:00 PM</option><option>03:00 PM</option>';
+      }
+    }
+  });
+
+  // POST /api/appointments
+  async function submitBooking() {
+    const payload = {
+      doctor_id: document.getElementById('book-doctor-id').value,
+      date: document.getElementById('book-date').value,
+      time: document.getElementById('book-time').value,
+      type: document.getElementById('book-type').value,
+      reason: document.getElementById('book-reason').value
+    };
+    if (!payload.date || !payload.time || !payload.reason) { toast('Please fill all fields', 'error'); return; }
+    try {
+      await POST('/appointments', payload);
+      closeModal('bookModal');
+      toast('Appointment booked successfully!', 'success');
+    } catch (err) { toast(err.message || 'Booking failed', 'error'); }
+  }
+
+  // GET /api/doctors/:id
+  async function viewDoctor(id) {
+    openModal('doctorModal');
+    document.getElementById('doctorDetailBody').textContent = 'Loading…';
+    try {
+      const d = await GET(`/doctors/${id}`);
+      document.getElementById('doctorDetailBody').innerHTML = `
+        <div style="display:flex;gap:20px;align-items:flex-start;margin-bottom:20px;">
+          <div class="dc-avatar" style="width:80px;height:80px;font-size:36px;flex-shrink:0;">👨‍⚕️</div>
+          <div>
+            <h2 style="font-size:20px;font-weight:800;">${d.name}</h2>
+            <div class="text-primary fw-600" style="margin:4px 0;">${d.specialty}</div>
+            <div class="text-muted text-sm">${d.experience} years experience · License: ${d.license_no || 'N/A'}</div>
+            <div style="margin-top:8px;">${'★'.repeat(Math.round(d.rating || 4))} ${d.rating} (${d.reviews || 0} reviews)</div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <p class="text-light" style="margin-bottom:16px;">${d.bio || 'No bio available.'}</p>
+        <div class="form-row">
+          <div><div class="fw-700 mb-2">Consultation Fee</div><div class="text-primary fw-700" style="font-size:20px;">₹${d.fee}</div></div>
+          <div><div class="fw-700 mb-2">Availability</div><div class="text-sm">${d.availability || 'Mon–Fri, 9AM–5PM'}</div></div>
+        </div>`;
+      document.getElementById('modal-book-btn').onclick = () => { closeModal('doctorModal'); openBooking(d); };
+    } catch (err) {
+      document.getElementById('doctorDetailBody').innerHTML = `<p class="text-danger">Failed to load doctor details: ${err.message}</p>`;
+    }
+  }
+
+  loadSpecialties();
+  loadDoctors();
+
+  document.getElementById('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') loadDoctors(); });
+</script>
+</body>
+</html>

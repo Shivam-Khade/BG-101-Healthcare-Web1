@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profile — MediConnect Patient</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="logo-brand"><span class="logo-icon">🏥</span> MediConnect</div><div class="logo-sub">Patient Portal</div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Main</div>
+      <a href="dashboard.html" class="nav-link"><span class="nav-icon">🏠</span> Dashboard</a>
+      <a href="doctors.html" class="nav-link"><span class="nav-icon">👨‍⚕️</span> Find Doctors</a>
+      <a href="appointments.html" class="nav-link"><span class="nav-icon">📅</span> Appointments</a>
+      <div class="nav-group-label">Health</div>
+      <a href="medical-records.html" class="nav-link"><span class="nav-icon">📁</span> Medical Records</a>
+      <a href="prescriptions.html" class="nav-link"><span class="nav-icon">💊</span> Prescriptions</a>
+      <a href="lab-reports.html" class="nav-link"><span class="nav-icon">🔬</span> Lab Reports</a>
+      <a href="pharmacy.html" class="nav-link"><span class="nav-icon">🏪</span> Pharmacy</a>
+      <div class="nav-group-label">Account</div>
+      <a href="billing.html" class="nav-link"><span class="nav-icon">💳</span> Billing</a>
+      <a href="profile.html" class="nav-link active"><span class="nav-icon">👤</span> Profile</a>
+      <a href="notifications.html" class="nav-link"><span class="nav-icon">🔔</span> Notifications</a>
+      <a href="emergency.html" class="nav-link"><span class="nav-icon">🆘</span> Emergency SOS</a>
+    </nav>
+    <div class="sidebar-footer"><div class="sidebar-user" onclick="logout()"><div class="s-avatar" id="sidebar-avatar">P</div><div><div class="s-user-name" id="sidebar-user-name">Patient</div><div class="s-user-role">Sign out →</div></div></div></div>
+  </aside>
+
+  <main class="main-content">
+    <header class="top-bar">
+      <div class="top-bar-title">My Profile</div>
+    </header>
+
+    <div class="page-content">
+      <div class="grid-2">
+
+        <!-- Profile Card -->
+        <div class="card" style="grid-column:1/-1;margin-bottom:22px;">
+          <div class="card-body" style="display:flex;align-items:center;gap:24px;padding:28px;">
+            <div class="profile-pic" id="profile-pic-display">👤</div>
+            <div style="flex:1;">
+              <h2 style="font-size:22px;font-weight:800;" id="profile-full-name">Loading…</h2>
+              <div class="text-muted" id="profile-email">—</div>
+              <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">
+                <span class="pill" id="profile-blood">🩸 Blood: —</span>
+                <span class="pill" id="profile-age">🎂 Age: —</span>
+                <span class="pill" id="profile-gender">—</span>
+              </div>
+            </div>
+            <button class="btn btn-outline" onclick="openModal('editProfileModal')">✏️ Edit Profile</button>
+          </div>
+        </div>
+
+        <!-- Personal Info -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">👤 Personal Information</span></div>
+          <div class="card-body" id="personal-info">
+            <div class="form-group"><label class="form-label">Full Name</label><div id="inf-name" style="font-size:14px;padding:4px 0;">—</div></div>
+            <div class="form-group"><label class="form-label">Email</label><div id="inf-email" style="font-size:14px;padding:4px 0;">—</div></div>
+            <div class="form-group"><label class="form-label">Phone</label><div id="inf-phone" style="font-size:14px;padding:4px 0;">—</div></div>
+            <div class="form-group"><label class="form-label">Date of Birth</label><div id="inf-dob" style="font-size:14px;padding:4px 0;">—</div></div>
+            <div class="form-group"><label class="form-label">Address</label><div id="inf-address" style="font-size:14px;padding:4px 0;">—</div></div>
+          </div>
+        </div>
+
+        <!-- Health Info -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">❤️ Health Information</span><button class="btn btn-outline btn-sm" onclick="openModal('editHealthModal')">Edit</button></div>
+          <div class="card-body" id="health-info">
+            <div class="form-group"><label class="form-label">Blood Group</label><div id="h-blood" style="font-size:14px;">—</div></div>
+            <div class="form-group"><label class="form-label">Height</label><div id="h-height" style="font-size:14px;">—</div></div>
+            <div class="form-group"><label class="form-label">Weight</label><div id="h-weight" style="font-size:14px;">—</div></div>
+            <div class="form-group"><label class="form-label">Known Allergies</label><div id="h-allergies" style="font-size:14px;">—</div></div>
+            <div class="form-group"><label class="form-label">Chronic Conditions</label><div id="h-conditions" style="font-size:14px;">—</div></div>
+          </div>
+        </div>
+
+        <!-- Change Password -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">🔒 Change Password</span></div>
+          <div class="card-body">
+            <form id="passwordForm">
+              <div class="form-group"><label class="form-label">Current Password</label><input type="password" class="form-control" id="curr-pass" placeholder="Enter current password" /></div>
+              <div class="form-group"><label class="form-label">New Password</label><input type="password" class="form-control" id="new-pass" placeholder="Min. 8 characters" /></div>
+              <div class="form-group"><label class="form-label">Confirm New Password</label><input type="password" class="form-control" id="confirm-pass" placeholder="Re-enter new password" /></div>
+              <button type="submit" class="btn btn-primary w-full">Update Password</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">⚠️ Account Settings</span></div>
+          <div class="card-body">
+            <div class="alert alert-warning mb-4"><span>⚠️</span> Deleting your account is permanent and cannot be undone. All your health data will be removed.</div>
+            <button class="btn btn-secondary w-full mb-2" onclick="logout()">Sign Out from All Devices</button>
+            <button class="btn btn-danger w-full" onclick="deleteAccount()">Delete Account</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Edit Profile Modal -->
+<div class="modal-overlay" id="editProfileModal">
+  <div class="modal modal-lg">
+    <div class="modal-header"><span class="modal-title">Edit Personal Information</span><button class="modal-close" onclick="closeModal('editProfileModal')">✕</button></div>
+    <div class="modal-body">
+      <form id="profileForm">
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-control" id="edit-name" /></div>
+          <div class="form-group"><label class="form-label">Phone</label><input type="tel" class="form-control" id="edit-phone" /></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Date of Birth</label><input type="date" class="form-control" id="edit-dob" /></div>
+          <div class="form-group"><label class="form-label">Gender</label><select class="form-control" id="edit-gender"><option>Male</option><option>Female</option><option>Other</option></select></div>
+        </div>
+        <div class="form-group"><label class="form-label">Address</label><textarea class="form-control" id="edit-address" rows="2"></textarea></div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('editProfileModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Health Modal -->
+<div class="modal-overlay" id="editHealthModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Edit Health Information</span><button class="modal-close" onclick="closeModal('editHealthModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Blood Group</label>
+          <select class="form-control" id="edit-blood">
+            <option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Height (cm)</label><input type="number" class="form-control" id="edit-height" placeholder="e.g. 170" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Weight (kg)</label><input type="number" class="form-control" id="edit-weight" placeholder="e.g. 70" /></div>
+        <div class="form-group"><label class="form-label">Last BP Reading</label><input type="text" class="form-control" id="edit-bp" placeholder="e.g. 120/80 mmHg" /></div>
+      </div>
+      <div class="form-group"><label class="form-label">Known Allergies</label><textarea class="form-control" id="edit-allergies" rows="2" placeholder="List your allergies (one per line)…"></textarea></div>
+      <div class="form-group"><label class="form-label">Chronic Conditions</label><textarea class="form-control" id="edit-conditions" rows="2" placeholder="e.g. Diabetes, Hypertension…"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('editHealthModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveHealth()">Save Health Info</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="js/app.js"></script>
+<script>
+  function logout() { auth.clear(); window.location.href = 'index.html'; }
+
+  // GET /api/profile
+  async function loadProfile() {
+    try {
+      const p = await GET('/profile');
+      document.getElementById('profile-full-name').textContent = p.name;
+      document.getElementById('profile-email').textContent = p.email;
+      document.getElementById('profile-blood').textContent = `🩸 Blood: ${p.blood_group || '—'}`;
+      document.getElementById('profile-gender').textContent = p.gender || '—';
+      const dob = p.dob ? new Date(p.dob) : null;
+      const age = dob ? Math.floor((new Date() - dob) / 31557600000) : '—';
+      document.getElementById('profile-age').textContent = `🎂 Age: ${age}`;
+      document.getElementById('profile-pic-display').textContent = (p.name || 'P').charAt(0).toUpperCase();
+
+      document.getElementById('inf-name').textContent = p.name;
+      document.getElementById('inf-email').textContent = p.email;
+      document.getElementById('inf-phone').textContent = p.phone || '—';
+      document.getElementById('inf-dob').textContent = p.dob ? fmtDate(p.dob) : '—';
+      document.getElementById('inf-address').textContent = p.address || '—';
+
+      document.getElementById('h-blood').textContent = p.blood_group || '—';
+      document.getElementById('h-height').textContent = p.height ? `${p.height} cm` : '—';
+      document.getElementById('h-weight').textContent = p.weight ? `${p.weight} kg` : '—';
+      document.getElementById('h-allergies').textContent = p.allergies || 'None';
+      document.getElementById('h-conditions').textContent = p.conditions || 'None';
+
+      // prefill edit forms
+      document.getElementById('edit-name').value = p.name || '';
+      document.getElementById('edit-phone').value = p.phone || '';
+      document.getElementById('edit-dob').value = p.dob || '';
+      document.getElementById('edit-gender').value = p.gender || 'Male';
+      document.getElementById('edit-address').value = p.address || '';
+      document.getElementById('edit-blood').value = p.blood_group || 'O+';
+      document.getElementById('edit-height').value = p.height || '';
+      document.getElementById('edit-weight').value = p.weight || '';
+      document.getElementById('edit-allergies').value = p.allergies || '';
+      document.getElementById('edit-conditions').value = p.conditions || '';
+    } catch (err) { console.error('Profile load failed:', err.message); }
+  }
+
+  // PUT /api/profile
+  async function saveProfile() {
+    const payload = {
+      name: document.getElementById('edit-name').value,
+      phone: document.getElementById('edit-phone').value,
+      dob: document.getElementById('edit-dob').value,
+      gender: document.getElementById('edit-gender').value,
+      address: document.getElementById('edit-address').value
+    };
+    try {
+      await PUT('/profile', payload);
+      closeModal('editProfileModal');
+      toast('Profile updated!', 'success');
+      loadProfile();
+    } catch (err) { toast(err.message || 'Update failed', 'error'); }
+  }
+
+  // PUT /api/profile (health fields)
+  async function saveHealth() {
+    const payload = {
+      blood_group: document.getElementById('edit-blood').value,
+      height: document.getElementById('edit-height').value,
+      weight: document.getElementById('edit-weight').value,
+      blood_pressure: document.getElementById('edit-bp').value,
+      allergies: document.getElementById('edit-allergies').value,
+      conditions: document.getElementById('edit-conditions').value
+    };
+    try {
+      await PUT('/profile', payload);
+      closeModal('editHealthModal');
+      toast('Health info updated!', 'success');
+      loadProfile();
+    } catch (err) { toast(err.message || 'Update failed', 'error'); }
+  }
+
+  // PUT /api/profile/password
+  document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const np = document.getElementById('new-pass').value;
+    const cp = document.getElementById('confirm-pass').value;
+    if (np !== cp) { toast('Passwords do not match', 'error'); return; }
+    try {
+      await PUT('/profile/password', { current_password: document.getElementById('curr-pass').value, new_password: np });
+      toast('Password updated!', 'success');
+      e.target.reset();
+    } catch (err) { toast(err.message || 'Failed', 'error'); }
+  });
+
+  // DELETE /api/profile
+  async function deleteAccount() {
+    if (!confirm('Are you absolutely sure? This will delete all your data permanently.')) return;
+    try {
+      await DEL('/profile');
+      auth.clear();
+      window.location.href = 'index.html';
+    } catch (err) { toast(err.message || 'Delete failed', 'error'); }
+  }
+
+  loadProfile();
+</script>
+</body>
+</html>

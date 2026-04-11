@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Emergency SOS — MediConnect Patient</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .hospital-card { background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;display:flex;align-items:center;gap:14px;margin-bottom:12px; }
+    .hospital-icon { font-size:32px;flex-shrink:0; }
+    .hospital-name { font-size:14px;font-weight:700; }
+    .hospital-dist { font-size:12px;color:var(--text-muted);margin-top:2px; }
+    .emergency-info-card { background:linear-gradient(135deg,#EF4444,#DC2626);color:#fff;border-radius:var(--radius);padding:20px;margin-bottom:22px; }
+    .sos-active { animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 0 18px rgba(239,68,68,.15),0 0 0 36px rgba(239,68,68,.07);} 50%{box-shadow:0 0 0 24px rgba(239,68,68,.25),0 0 0 48px rgba(239,68,68,.12);} }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="logo-brand"><span class="logo-icon">🏥</span> MediConnect</div><div class="logo-sub">Patient Portal</div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Main</div>
+      <a href="dashboard.html" class="nav-link"><span class="nav-icon">🏠</span> Dashboard</a>
+      <a href="doctors.html" class="nav-link"><span class="nav-icon">👨‍⚕️</span> Find Doctors</a>
+      <a href="appointments.html" class="nav-link"><span class="nav-icon">📅</span> Appointments</a>
+      <div class="nav-group-label">Health</div>
+      <a href="medical-records.html" class="nav-link"><span class="nav-icon">📁</span> Medical Records</a>
+      <a href="prescriptions.html" class="nav-link"><span class="nav-icon">💊</span> Prescriptions</a>
+      <a href="lab-reports.html" class="nav-link"><span class="nav-icon">🔬</span> Lab Reports</a>
+      <a href="pharmacy.html" class="nav-link"><span class="nav-icon">🏪</span> Pharmacy</a>
+      <div class="nav-group-label">Account</div>
+      <a href="billing.html" class="nav-link"><span class="nav-icon">💳</span> Billing</a>
+      <a href="profile.html" class="nav-link"><span class="nav-icon">👤</span> Profile</a>
+      <a href="notifications.html" class="nav-link"><span class="nav-icon">🔔</span> Notifications</a>
+      <a href="emergency.html" class="nav-link active"><span class="nav-icon">🆘</span> Emergency SOS</a>
+    </nav>
+    <div class="sidebar-footer"><div class="sidebar-user" onclick="logout()"><div class="s-avatar" id="sidebar-avatar">P</div><div><div class="s-user-name" id="sidebar-user-name">Patient</div><div class="s-user-role">Sign out →</div></div></div></div>
+  </aside>
+
+  <main class="main-content">
+    <header class="top-bar">
+      <div class="top-bar-title" style="color:var(--danger);">🆘 Emergency SOS</div>
+    </header>
+
+    <div class="page-content">
+
+      <!-- Quick Info Banner -->
+      <div class="emergency-info-card">
+        <div class="fw-700" style="font-size:16px;margin-bottom:6px;">Quick Emergency Numbers</div>
+        <div style="display:flex;gap:24px;flex-wrap:wrap;font-size:14px;">
+          <span>🚑 Ambulance: <strong>108</strong></span>
+          <span>🚒 Fire: <strong>101</strong></span>
+          <span>👮 Police: <strong>100</strong></span>
+          <span>🏥 Hospital Helpline: <strong>1800-XXX-XXXX</strong></span>
+        </div>
+      </div>
+
+      <div class="grid-2">
+
+        <!-- SOS Button Section -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">🆘 Emergency Alert</span></div>
+          <div class="card-body">
+            <p style="color:var(--text-light);font-size:13px;margin-bottom:28px;text-align:center;">Press the SOS button to alert your emergency contacts and share your location with nearby hospitals.</p>
+            <div class="sos-center" style="padding:24px 0;">
+              <button class="sos-btn" id="sosBtn" onclick="triggerSOS()">
+                <span class="sos-icon">🆘</span>
+                <span class="sos-label">SOS</span>
+                <span class="sos-hint">Tap to Alert</span>
+              </button>
+            </div>
+            <div id="sos-status" style="text-align:center;margin-top:24px;display:none;">
+              <div class="alert alert-danger" style="justify-content:center;">
+                <span>📡</span> <strong>Alert sent!</strong> Emergency contacts and nearby hospitals have been notified.
+              </div>
+              <button class="btn btn-secondary" onclick="cancelSOS()">Cancel Alert</button>
+            </div>
+            <div class="divider"></div>
+            <div class="form-group">
+              <label class="form-label">Custom Emergency Message</label>
+              <textarea class="form-control" id="sos-message" rows="2" placeholder="Describe your emergency (e.g. Chest pain, breathing difficulty…)"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Emergency Contacts -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📞 Emergency Contacts</span>
+            <button class="btn btn-primary btn-sm" onclick="openModal('addContactModal')">+ Add Contact</button>
+          </div>
+          <div class="card-body" id="contacts-list">
+            <div class="empty-state" style="padding:24px 0;">
+              <div class="empty-icon">📞</div>
+              <h3>No emergency contacts</h3>
+              <p>Add contacts who will be alerted during an emergency</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Nearby Hospitals -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🏥 Nearby Hospitals</span>
+            <button class="btn btn-outline btn-sm" onclick="findHospitals()">📍 Locate Me</button>
+          </div>
+          <div class="card-body" id="hospitals-list">
+            <div class="empty-state" style="padding:24px 0;">
+              <div class="empty-icon">📍</div>
+              <h3>Enable location</h3>
+              <p>Click "Locate Me" to find hospitals near you</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Medical Summary -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">🩺 Quick Medical Info</span><a href="profile.html" class="btn btn-outline btn-sm">Edit</a></div>
+          <div class="card-body">
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div class="flex justify-between"><span class="fw-600 text-sm">Blood Group</span><span class="pill" id="med-blood">—</span></div>
+              <div class="flex justify-between"><span class="fw-600 text-sm">Known Allergies</span><span class="text-sm text-muted" id="med-allergies">—</span></div>
+              <div class="flex justify-between"><span class="fw-600 text-sm">Chronic Conditions</span><span class="text-sm text-muted" id="med-conditions">—</span></div>
+              <div class="flex justify-between"><span class="fw-600 text-sm">Current Medications</span><span class="text-sm text-muted" id="med-meds">—</span></div>
+            </div>
+            <div class="alert alert-warning" style="margin-top:16px;font-size:12px;">
+              <span>💡</span> This info is shared with hospitals when you trigger an SOS alert.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Add Contact Modal -->
+<div class="modal-overlay" id="addContactModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Add Emergency Contact</span><button class="modal-close" onclick="closeModal('addContactModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-control" id="ec-name" placeholder="Contact's full name" /></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Relation</label>
+          <select class="form-control" id="ec-relation">
+            <option>Spouse</option><option>Parent</option><option>Child</option><option>Sibling</option><option>Friend</option><option>Doctor</option><option>Other</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Phone Number</label><input type="tel" class="form-control" id="ec-phone" placeholder="+91 9876543210" /></div>
+      </div>
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" id="ec-primary" /> <span class="fw-600 text-sm">Set as Primary Contact</span>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('addContactModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addContact()">Add Contact</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="js/app.js"></script>
+<script>
+  function logout() { auth.clear(); window.location.href = 'index.html'; }
+
+  let sosActive = false;
+
+  // POST /api/emergency/sos   Body: { latitude, longitude, message }
+  async function triggerSOS() {
+    if (sosActive) return;
+    const message = document.getElementById('sos-message').value;
+
+    let lat = null, lng = null;
+    if (navigator.geolocation) {
+      try {
+        const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 }));
+        lat = pos.coords.latitude; lng = pos.coords.longitude;
+      } catch {}
+    }
+
+    try {
+      await POST('/emergency/sos', { latitude: lat, longitude: lng, message });
+      sosActive = true;
+      document.getElementById('sosBtn').classList.add('sos-active');
+      document.getElementById('sos-status').style.display = 'block';
+      toast('🆘 Emergency alert sent to all contacts!', 'error');
+    } catch (err) {
+      toast(err.message || 'Failed to send SOS', 'error');
+    }
+  }
+
+  function cancelSOS() {
+    sosActive = false;
+    document.getElementById('sosBtn').classList.remove('sos-active');
+    document.getElementById('sos-status').style.display = 'none';
+    toast('Alert cancelled', 'warning');
+  }
+
+  // GET /api/emergency/hospitals?lat=&lng=&radius=5
+  async function findHospitals() {
+    const listEl = document.getElementById('hospitals-list');
+    listEl.innerHTML = '<div class="empty-state" style="padding:24px 0;"><div class="empty-icon">⏳</div><h3>Locating…</h3></div>';
+
+    let lat = null, lng = null;
+    if (navigator.geolocation) {
+      try {
+        const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8000 }));
+        lat = pos.coords.latitude; lng = pos.coords.longitude;
+      } catch { toast('Location access denied', 'warning'); }
+    }
+
+    try {
+      const data = await GET(`/emergency/hospitals?lat=${lat}&lng=${lng}&radius=5`);
+      const hospitals = Array.isArray(data) ? data : data.hospitals || [];
+      listEl.innerHTML = hospitals.length
+        ? hospitals.map(h => `
+          <div class="hospital-card">
+            <span class="hospital-icon">🏥</span>
+            <div style="flex:1;">
+              <div class="hospital-name">${h.name}</div>
+              <div class="hospital-dist">📍 ${h.address} · ${h.distance || '—'} km</div>
+            </div>
+            <div style="text-align:right;">
+              <a href="tel:${h.phone}" class="btn btn-danger btn-sm">📞 Call</a>
+            </div>
+          </div>`).join('')
+        : '<div class="empty-state" style="padding:24px 0;"><div class="empty-icon">🏥</div><h3>No hospitals found nearby</h3></div>';
+    } catch (err) {
+      listEl.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+    }
+  }
+
+  // GET /api/emergency/contacts
+  async function loadContacts() {
+    try {
+      const data = await GET('/emergency/contacts');
+      const contacts = Array.isArray(data) ? data : data.contacts || [];
+      document.getElementById('contacts-list').innerHTML = contacts.length
+        ? contacts.map(c => `
+          <div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);">
+            <div style="font-size:28px;">👤</div>
+            <div style="flex:1;">
+              <div class="fw-700">${c.name} ${c.is_primary ? '⭐' : ''}</div>
+              <div class="text-sm text-muted">${c.relation} · ${c.phone}</div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <a href="tel:${c.phone}" class="btn btn-success btn-sm">📞</a>
+              <button class="btn btn-danger btn-sm" onclick="deleteContact(${c.id})">✕</button>
+            </div>
+          </div>`).join('')
+        : '<div class="empty-state" style="padding:24px 0;"><div class="empty-icon">📞</div><h3>No contacts added</h3></div>';
+    } catch {}
+  }
+
+  // POST /api/emergency/contacts
+  async function addContact() {
+    const payload = {
+      name: document.getElementById('ec-name').value,
+      relation: document.getElementById('ec-relation').value,
+      phone: document.getElementById('ec-phone').value,
+      is_primary: document.getElementById('ec-primary').checked
+    };
+    if (!payload.name || !payload.phone) { toast('Fill required fields', 'error'); return; }
+    try {
+      await POST('/emergency/contacts', payload);
+      closeModal('addContactModal');
+      toast('Contact added!', 'success');
+      loadContacts();
+    } catch (err) { toast(err.message || 'Failed', 'error'); }
+  }
+
+  // DELETE /api/emergency/contacts/:id
+  async function deleteContact(id) {
+    if (!confirm('Remove this emergency contact?')) return;
+    try { await DEL(`/emergency/contacts/${id}`); loadContacts(); } catch {}
+  }
+
+  // GET /api/profile (for medical summary)
+  async function loadMedicalSummary() {
+    try {
+      const p = await GET('/profile');
+      document.getElementById('med-blood').textContent = p.blood_group || '—';
+      document.getElementById('med-allergies').textContent = p.allergies || 'None';
+      document.getElementById('med-conditions').textContent = p.conditions || 'None';
+    } catch {}
+  }
+
+  loadContacts();
+  loadMedicalSummary();
+</script>
+</body>
+</html>

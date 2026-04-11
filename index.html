@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login / Register — MediConnect Patient Portal</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-box">
+
+    <!-- Left Panel -->
+    <div class="auth-left">
+      <div class="auth-brand">
+        <span class="auth-brand-icon">🏥</span>
+        <div>
+          <div class="auth-brand-name">MediConnect</div>
+          <div class="auth-brand-sub">Patient Portal</div>
+        </div>
+      </div>
+      <h2>Your health, managed smarter.</h2>
+      <p>Access doctors, appointments, prescriptions, lab reports, and more — all in one place.</p>
+      <div class="auth-feats">
+        <div class="auth-feat"><span class="af-icon">📅</span> Book appointments instantly</div>
+        <div class="auth-feat"><span class="af-icon">💊</span> View prescriptions & medicines</div>
+        <div class="auth-feat"><span class="af-icon">🔬</span> Access lab reports online</div>
+        <div class="auth-feat"><span class="af-icon">🆘</span> Emergency SOS with one tap</div>
+        <div class="auth-feat"><span class="af-icon">💳</span> Track bills & payments</div>
+      </div>
+    </div>
+
+    <!-- Right Panel -->
+    <div class="auth-right">
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-form="login-form">Login</button>
+        <button class="auth-tab" data-form="register-form">Register</button>
+      </div>
+
+      <!-- LOGIN -->
+      <div id="login-form" class="auth-form-pane active">
+        <h3>Welcome back</h3>
+        <p>Sign in to your patient account</p>
+
+        <!-- Demo Credentials -->
+        <div style="padding:12px 14px;background:#EFF6FF;border-radius:9px;border:1.5px dashed #BFDBFE;margin-bottom:18px;">
+          <div style="font-size:10px;font-weight:700;color:#2563EB;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">🎯 Demo Credentials</div>
+          <div style="font-size:12.5px;color:var(--text);display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+            <span>📧 <strong>patient@demo.com</strong></span>
+            <span>🔒 <strong>demo123</strong></span>
+            <button type="button" class="btn btn-primary btn-sm" onclick="fillPatientDemo()" style="margin-left:auto;">Use →</button>
+          </div>
+        </div>
+
+        <form id="loginForm">
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" class="form-control" id="login-email" placeholder="patient@email.com" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" class="form-control" id="login-pass" placeholder="Enter your password" required />
+          </div>
+          <div class="flex justify-between items-center mb-4" style="font-size:13px;">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input type="checkbox" /> Remember me
+            </label>
+            <a href="#" style="color:var(--primary);font-weight:600;">Forgot password?</a>
+          </div>
+          <button type="submit" class="btn btn-primary w-full btn-lg">Sign In</button>
+        </form>
+        <div class="auth-link">Don't have an account? <a onclick="switchTab('register-form')">Register here</a></div>
+      </div>
+
+      <!-- REGISTER -->
+      <div id="register-form" class="auth-form-pane">
+        <h3>Create account</h3>
+        <p>Fill in your details to get started</p>
+        <form id="registerForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Full Name</label>
+              <input type="text" class="form-control" placeholder="John Doe" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phone Number</label>
+              <input type="tel" class="form-control" placeholder="+91 9876543210" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" class="form-control" placeholder="patient@email.com" required />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Date of Birth</label>
+              <input type="date" class="form-control" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Gender</label>
+              <select class="form-control">
+                <option value="">Select gender</option>
+                <option>Male</option><option>Female</option><option>Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Blood Group</label>
+              <select class="form-control">
+                <option value="">Select</option>
+                <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+                <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password</label>
+              <input type="password" class="form-control" placeholder="Min. 8 characters" required />
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary w-full btn-lg">Create Account</button>
+        </form>
+        <div class="auth-link">Already have an account? <a onclick="switchTab('login-form')">Sign in</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="js/app.js"></script>
+<script>
+  // Override requireAuth for auth page
+  function requireAuth() {}
+
+  const DEMO_EMAIL = 'patient@demo.com';
+  const DEMO_PASS  = 'demo123';
+  const DEMO_USER  = { id: 1, name: 'Priya Mehta', email: DEMO_EMAIL, blood_group: 'B+', gender: 'Female' };
+
+  function fillPatientDemo() {
+    document.getElementById('login-email').value = DEMO_EMAIL;
+    document.getElementById('login-pass').value = DEMO_PASS;
+    toast('Demo credentials filled — click Sign In', 'default');
+  }
+
+  initAuthTabs();
+
+  function switchTab(id) {
+    document.querySelectorAll('.auth-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.form === id);
+    });
+    document.querySelectorAll('.auth-form-pane').forEach(p => {
+      p.classList.toggle('active', p.id === id);
+    });
+  }
+
+  // LOGIN — POST /api/auth/login
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-pass').value;
+    const btn = e.target.querySelector('button[type=submit]');
+
+    // ── DEMO BYPASS (no backend required) ──
+    if (email === DEMO_EMAIL && password === DEMO_PASS) {
+      auth.setToken('demo-token');
+      auth.setUser(DEMO_USER);
+      toast('Demo login successful!', 'success');
+      setTimeout(() => window.location.href = 'dashboard.html', 700);
+      return;
+    }
+
+    btn.textContent = 'Signing in…'; btn.disabled = true;
+    try {
+      const data = await POST('/auth/login', { email, password });
+      auth.setToken(data.token);
+      auth.setUser(data.user);
+      toast('Login successful! Redirecting…', 'success');
+      setTimeout(() => window.location.href = 'dashboard.html', 1000);
+    } catch (err) {
+      toast(err.message || 'Invalid credentials', 'error');
+      btn.textContent = 'Sign In'; btn.disabled = false;
+    }
+  });
+
+  // REGISTER — POST /api/auth/register
+  document.getElementById('registerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const inputs = e.target.querySelectorAll('input, select');
+    const btn = e.target.querySelector('button[type=submit]');
+    btn.textContent = 'Creating account…'; btn.disabled = true;
+    const payload = {
+      name: inputs[0].value, phone: inputs[1].value, email: inputs[2].value,
+      dob: inputs[3].value, gender: inputs[4].value,
+      blood_group: inputs[5].value, password: inputs[6].value
+    };
+    try {
+      const data = await POST('/auth/register', payload);
+      auth.setToken(data.token);
+      auth.setUser(data.user);
+      toast('Account created! Redirecting…', 'success');
+      setTimeout(() => window.location.href = 'dashboard.html', 1000);
+    } catch (err) {
+      toast(err.message || 'Registration failed', 'error');
+      btn.textContent = 'Create Account'; btn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

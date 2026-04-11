@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notifications — MediConnect Patient</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="logo-brand"><span class="logo-icon">🏥</span> MediConnect</div><div class="logo-sub">Patient Portal</div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Main</div>
+      <a href="dashboard.html" class="nav-link"><span class="nav-icon">🏠</span> Dashboard</a>
+      <a href="doctors.html" class="nav-link"><span class="nav-icon">👨‍⚕️</span> Find Doctors</a>
+      <a href="appointments.html" class="nav-link"><span class="nav-icon">📅</span> Appointments</a>
+      <div class="nav-group-label">Health</div>
+      <a href="medical-records.html" class="nav-link"><span class="nav-icon">📁</span> Medical Records</a>
+      <a href="prescriptions.html" class="nav-link"><span class="nav-icon">💊</span> Prescriptions</a>
+      <a href="lab-reports.html" class="nav-link"><span class="nav-icon">🔬</span> Lab Reports</a>
+      <a href="pharmacy.html" class="nav-link"><span class="nav-icon">🏪</span> Pharmacy</a>
+      <div class="nav-group-label">Account</div>
+      <a href="billing.html" class="nav-link"><span class="nav-icon">💳</span> Billing</a>
+      <a href="profile.html" class="nav-link"><span class="nav-icon">👤</span> Profile</a>
+      <a href="notifications.html" class="nav-link active"><span class="nav-icon">🔔</span> Notifications</a>
+      <a href="emergency.html" class="nav-link"><span class="nav-icon">🆘</span> Emergency SOS</a>
+    </nav>
+    <div class="sidebar-footer"><div class="sidebar-user" onclick="logout()"><div class="s-avatar" id="sidebar-avatar">P</div><div><div class="s-user-name" id="sidebar-user-name">Patient</div><div class="s-user-role">Sign out →</div></div></div></div>
+  </aside>
+
+  <main class="main-content">
+    <header class="top-bar">
+      <div class="top-bar-title">Notifications</div>
+      <div class="top-bar-actions">
+        <button class="btn btn-secondary btn-sm" onclick="markAllRead()">Mark all as read</button>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <div class="tabs page-tabs">
+        <button class="tab-btn active" data-tab="tab-all">All</button>
+        <button class="tab-btn" data-tab="tab-unread">Unread <span id="unread-count" class="nav-badge" style="position:static;margin-left:4px;background:var(--primary);">0</span></button>
+      </div>
+
+      <div id="tab-all" class="tab-pane active">
+        <div class="card">
+          <div id="all-notifs">
+            <div class="empty-state"><div class="empty-icon">🔔</div><h3>No notifications yet</h3></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-unread" class="tab-pane">
+        <div class="card">
+          <div id="unread-notifs">
+            <div class="empty-state"><div class="empty-icon">✅</div><h3>All caught up!</h3><p>No unread notifications</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="js/app.js"></script>
+<script>
+  function logout() { auth.clear(); window.location.href = 'index.html'; }
+
+  const iconMap = {
+    appointment: { icon: '📅', cls: 'ni-blue' },
+    prescription: { icon: '💊', cls: 'ni-green' },
+    lab: { icon: '🔬', cls: 'ni-orange' },
+    billing: { icon: '💳', cls: 'ni-blue' },
+    emergency: { icon: '🆘', cls: 'ni-red' },
+    system: { icon: '🔔', cls: 'ni-blue' },
+  };
+
+  function renderNotif(n) {
+    const ic = iconMap[n.type] || iconMap.system;
+    return `
+      <div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="markRead(${n.id}, this)">
+        <div class="ni-icon ${ic.cls}">${ic.icon}</div>
+        <div class="ni-content">
+          <div class="ni-title">${n.title}</div>
+          <div class="ni-msg">${n.message}</div>
+          <div class="ni-time">${timeAgo(n.created_at)}</div>
+        </div>
+        ${n.is_read ? '' : '<div class="ni-unread-dot"></div>'}
+        <button class="btn btn-ghost btn-sm" onclick="deleteNotif(event, ${n.id})">✕</button>
+      </div>`;
+  }
+
+  function timeAgo(dateStr) {
+    const d = new Date(dateStr);
+    const diff = Math.floor((new Date() - d) / 1000);
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+    return fmtDate(dateStr);
+  }
+
+  // GET /api/notifications
+  async function loadNotifications() {
+    try {
+      const data = await GET('/notifications');
+      const notifs = Array.isArray(data) ? data : data.notifications || [];
+      const unread = notifs.filter(n => !n.is_read);
+      document.getElementById('unread-count').textContent = unread.length;
+
+      document.getElementById('all-notifs').innerHTML = notifs.length
+        ? `<div class="notif-list">${notifs.map(renderNotif).join('')}</div>`
+        : '<div class="empty-state"><div class="empty-icon">🔔</div><h3>No notifications</h3></div>';
+
+      document.getElementById('unread-notifs').innerHTML = unread.length
+        ? `<div class="notif-list">${unread.map(renderNotif).join('')}</div>`
+        : '<div class="empty-state"><div class="empty-icon">✅</div><h3>All caught up!</h3></div>';
+    } catch (err) { toast(err.message, 'error'); }
+  }
+
+  // PUT /api/notifications/:id/read
+  async function markRead(id, el) {
+    try {
+      await PUT(`/notifications/${id}/read`);
+      el.classList.remove('unread');
+      el.querySelector('.ni-unread-dot')?.remove();
+      loadNotifications();
+    } catch {}
+  }
+
+  // PUT /api/notifications/read-all
+  async function markAllRead() {
+    try {
+      await PUT('/notifications/read-all');
+      toast('All notifications marked as read', 'success');
+      loadNotifications();
+    } catch (err) { toast(err.message, 'error'); }
+  }
+
+  // DELETE /api/notifications/:id
+  async function deleteNotif(e, id) {
+    e.stopPropagation();
+    try {
+      await DEL(`/notifications/${id}`);
+      loadNotifications();
+    } catch {}
+  }
+
+  initTabs('.page-tabs');
+  loadNotifications();
+</script>
+</body>
+</html>

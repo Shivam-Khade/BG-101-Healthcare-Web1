@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Billing — MediConnect Patient</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="logo-brand"><span class="logo-icon">🏥</span> MediConnect</div><div class="logo-sub">Patient Portal</div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Main</div>
+      <a href="dashboard.html" class="nav-link"><span class="nav-icon">🏠</span> Dashboard</a>
+      <a href="doctors.html" class="nav-link"><span class="nav-icon">👨‍⚕️</span> Find Doctors</a>
+      <a href="appointments.html" class="nav-link"><span class="nav-icon">📅</span> Appointments</a>
+      <div class="nav-group-label">Health</div>
+      <a href="medical-records.html" class="nav-link"><span class="nav-icon">📁</span> Medical Records</a>
+      <a href="prescriptions.html" class="nav-link"><span class="nav-icon">💊</span> Prescriptions</a>
+      <a href="lab-reports.html" class="nav-link"><span class="nav-icon">🔬</span> Lab Reports</a>
+      <a href="pharmacy.html" class="nav-link"><span class="nav-icon">🏪</span> Pharmacy</a>
+      <div class="nav-group-label">Account</div>
+      <a href="billing.html" class="nav-link active"><span class="nav-icon">💳</span> Billing</a>
+      <a href="profile.html" class="nav-link"><span class="nav-icon">👤</span> Profile</a>
+      <a href="notifications.html" class="nav-link"><span class="nav-icon">🔔</span> Notifications</a>
+      <a href="emergency.html" class="nav-link"><span class="nav-icon">🆘</span> Emergency SOS</a>
+    </nav>
+    <div class="sidebar-footer"><div class="sidebar-user" onclick="logout()"><div class="s-avatar" id="sidebar-avatar">P</div><div><div class="s-user-name" id="sidebar-user-name">Patient</div><div class="s-user-role">Sign out →</div></div></div></div>
+  </aside>
+
+  <main class="main-content">
+    <header class="top-bar">
+      <div class="top-bar-title">Billing & Payments</div>
+      <div class="top-bar-actions">
+        <button class="icon-btn" onclick="window.location.href='notifications.html'">🔔</button>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <!-- Summary Stats -->
+      <div class="stats-grid" style="margin-bottom:22px;">
+        <div class="stat-card"><div class="stat-icon si-red">💳</div><div class="stat-info"><div class="stat-val" id="stat-pending">—</div><div class="stat-lbl">Pending Amount</div></div></div>
+        <div class="stat-card"><div class="stat-icon si-green">✅</div><div class="stat-info"><div class="stat-val" id="stat-paid">—</div><div class="stat-lbl">Total Paid</div></div></div>
+        <div class="stat-card"><div class="stat-icon si-blue">🧾</div><div class="stat-info"><div class="stat-val" id="stat-invoices">—</div><div class="stat-lbl">Total Invoices</div></div></div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filter-bar">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" placeholder="Search invoices…" />
+        </div>
+        <select class="form-control" id="statusFilter" style="width:auto;min-width:160px;" onchange="loadBills()">
+          <option value="">All</option>
+          <option value="pending">Pending</option>
+          <option value="paid">Paid</option>
+          <option value="overdue">Overdue</option>
+        </select>
+        <button class="btn btn-secondary" onclick="loadBills()">Filter</button>
+      </div>
+
+      <!-- Bills Table -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">Invoices</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Invoice #</th><th>Description</th><th>Doctor</th><th>Date</th><th>Amount</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="bills-tbody">
+              <tr><td colspan="7" style="text-align:center;padding:48px;color:var(--text-muted);">Loading bills…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Invoice Detail Modal -->
+<div class="modal-overlay" id="invoiceModal">
+  <div class="modal modal-lg">
+    <div class="modal-header"><span class="modal-title">Invoice Details</span><button class="modal-close" onclick="closeModal('invoiceModal')">✕</button></div>
+    <div class="modal-body" id="invoiceModalBody">Loading…</div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('invoiceModal')">Close</button>
+      <button class="btn btn-primary" id="pay-btn" style="display:none;" onclick="payNow()">💳 Pay Now</button>
+      <button class="btn btn-outline" id="dl-invoice-btn">⬇ Download</button>
+    </div>
+  </div>
+</div>
+
+<!-- Pay Modal -->
+<div class="modal-overlay" id="payModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Make Payment</span><button class="modal-close" onclick="closeModal('payModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="alert alert-info mb-4"><span>💳</span> <div>Invoice: <strong id="pay-invoice-no">—</strong> · Amount: <strong id="pay-amount">—</strong></div></div>
+      <input type="hidden" id="pay-bill-id" />
+      <div class="form-group">
+        <label class="form-label">Payment Method</label>
+        <select class="form-control" id="pay-method">
+          <option value="upi">UPI</option>
+          <option value="card">Credit / Debit Card</option>
+          <option value="netbanking">Net Banking</option>
+          <option value="cash">Cash</option>
+        </select>
+      </div>
+      <div id="upi-field" class="form-group">
+        <label class="form-label">UPI ID</label>
+        <input type="text" class="form-control" id="upi-id" placeholder="yourname@upi" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Payment Notes (optional)</label>
+        <input type="text" class="form-control" id="pay-notes" placeholder="Transaction reference, etc." />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('payModal')">Cancel</button>
+      <button class="btn btn-success" onclick="submitPayment()">Confirm Payment</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="js/app.js"></script>
+<script>
+  function logout() { auth.clear(); window.location.href = 'index.html'; }
+
+  let currentBill = null;
+
+  // GET /api/bills?status=
+  async function loadBills() {
+    const status = document.getElementById('statusFilter').value;
+    const search = document.getElementById('searchInput').value;
+    try {
+      const data = await GET(`/bills?status=${status}&search=${search}`);
+      const bills = Array.isArray(data) ? data : data.bills || [];
+
+      // update stats
+      const pending = bills.filter(b => b.status === 'pending').reduce((s, b) => s + b.amount, 0);
+      const paid = bills.filter(b => b.status === 'paid').reduce((s, b) => s + b.amount, 0);
+      document.getElementById('stat-pending').textContent = `₹${pending}`;
+      document.getElementById('stat-paid').textContent = `₹${paid}`;
+      document.getElementById('stat-invoices').textContent = bills.length;
+
+      if (!bills.length) {
+        document.getElementById('bills-tbody').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);">No invoices found</td></tr>';
+        return;
+      }
+      document.getElementById('bills-tbody').innerHTML = bills.map(b => `
+        <tr>
+          <td class="fw-700">#${b.invoice_no || b.id}</td>
+          <td>${b.description}</td>
+          <td>Dr. ${b.doctor_name || '—'}</td>
+          <td>${fmtDate(b.date)}</td>
+          <td class="fw-700">₹${b.amount}</td>
+          <td><span class="badge ${b.status === 'paid' ? 'badge-success' : b.status === 'overdue' ? 'badge-danger' : 'badge-warning'}">${b.status}</span></td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-secondary btn-sm" onclick="viewInvoice(${b.id})">View</button>
+              ${b.status !== 'paid' ? `<button class="btn btn-primary btn-sm" onclick="openPayModal(${b.id}, '${b.invoice_no || b.id}', ${b.amount})">Pay</button>` : ''}
+            </div>
+          </td>
+        </tr>`).join('');
+    } catch (err) { toast(err.message, 'error'); }
+  }
+
+  // GET /api/bills/:id
+  async function viewInvoice(id) {
+    openModal('invoiceModal');
+    try {
+      const b = await GET(`/bills/${id}`);
+      currentBill = b;
+      document.getElementById('pay-btn').style.display = b.status !== 'paid' ? 'inline-flex' : 'none';
+      document.getElementById('invoiceModalBody').innerHTML = `
+        <div style="background:var(--bg);border-radius:10px;padding:20px;margin-bottom:20px;">
+          <div class="flex justify-between items-center mb-3">
+            <div><h3 class="fw-700" style="font-size:18px;">Invoice #${b.invoice_no || b.id}</h3><div class="text-muted text-sm">Issued: ${fmtDate(b.date)}</div></div>
+            <span class="badge ${b.status === 'paid' ? 'badge-success' : 'badge-warning'}" style="font-size:13px;">${b.status}</span>
+          </div>
+          <div class="form-row">
+            <div><div class="text-xs text-muted">Patient</div><div class="fw-600">${b.patient_name || 'You'}</div></div>
+            <div><div class="text-xs text-muted">Doctor</div><div class="fw-600">Dr. ${b.doctor_name || '—'}</div></div>
+            <div><div class="text-xs text-muted">Due Date</div><div class="fw-600 ${b.status === 'overdue' ? 'text-danger' : ''}">${fmtDate(b.due_date)}</div></div>
+          </div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+          <thead><tr><th style="text-align:left;padding:8px;background:var(--bg);font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Item</th><th style="text-align:right;padding:8px;background:var(--bg);font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Amount</th></tr></thead>
+          <tbody>${(b.items || [{ name: b.description, amount: b.amount }]).map(i => `<tr><td style="padding:10px 8px;border-bottom:1px solid var(--border);">${i.name}</td><td style="padding:10px 8px;border-bottom:1px solid var(--border);text-align:right;font-weight:600;">₹${i.amount}</td></tr>`).join('')}</tbody>
+          <tfoot><tr><td style="padding:10px 8px;font-weight:700;">Total</td><td style="padding:10px 8px;text-align:right;font-weight:800;font-size:18px;color:var(--primary);">₹${b.amount}</td></tr></tfoot>
+        </table>
+        ${b.status === 'paid' ? `<div class="alert alert-success"><span>✅</span> Paid on ${fmtDate(b.paid_at)} via ${b.payment_method || '—'}</div>` : ''}`;
+    } catch (err) {
+      document.getElementById('invoiceModalBody').innerHTML = `<p class="text-danger">${err.message}</p>`;
+    }
+  }
+
+  function openPayModal(id, invoiceNo, amount) {
+    document.getElementById('pay-bill-id').value = id;
+    document.getElementById('pay-invoice-no').textContent = `#${invoiceNo}`;
+    document.getElementById('pay-amount').textContent = `₹${amount}`;
+    openModal('payModal');
+  }
+
+  function payNow() {
+    if (!currentBill) return;
+    closeModal('invoiceModal');
+    openPayModal(currentBill.id, currentBill.invoice_no || currentBill.id, currentBill.amount);
+  }
+
+  // POST /api/bills/:id/pay
+  async function submitPayment() {
+    const id = document.getElementById('pay-bill-id').value;
+    const payload = { payment_method: document.getElementById('pay-method').value, notes: document.getElementById('pay-notes').value };
+    try {
+      await POST(`/bills/${id}/pay`, payload);
+      closeModal('payModal');
+      toast('Payment recorded successfully!', 'success');
+      loadBills();
+    } catch (err) { toast(err.message || 'Payment failed', 'error'); }
+  }
+
+  loadBills();
+</script>
+</body>
+</html>
