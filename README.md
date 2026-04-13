@@ -1,767 +1,729 @@
 # MediConnect — Patient Portal
-## Backend Competition Documentation
+## Participant Documentation
 
 ---
 
-## Overview
+## What You Need to Build
 
-This repository contains the **complete frontend** for the MediConnect Patient Portal — a healthcare web application. Your task as a participant is to **build the backend** that powers this frontend.
+This repo has the **complete frontend** for a healthcare patient portal. Your job is to build the **backend (server + database)** that makes it work.
 
-The frontend is built with plain HTML, CSS, and JavaScript. All API calls are made via `fetch()` in `js/app.js`. You do not need to touch the frontend code.
-
----
-
-## Quick Start
-
-1. Clone this repo
-2. Open `index.html` in a browser — use **Demo Credentials** to preview all pages without a backend
-3. Set your backend base URL in `js/app.js`:
-   ```js
-   const API = 'http://localhost:8000/api'; // change to your server
-   ```
-4. Build your backend to match the API contract below
+The frontend is already wired up — every button, form, and page makes API calls to your server. You just need to handle those calls and return the right data.
 
 ---
 
-## Demo Credentials (Frontend Preview)
+## Getting Started
 
-| Field    | Value               |
-|----------|---------------------|
-| Email    | `patient@demo.com`  |
-| Password | `demo123`           |
+**Step 1** — Clone this repo and open `index.html` in a browser
+**Step 2** — Use the demo credentials below to explore all pages (no backend needed for preview)
+**Step 3** — Open `js/app.js` and update the base URL to point to your server:
 
-> These bypass the API. Remove or disable in production.
+```
+const API = 'http://localhost:8000/api';   ← change this to your server address
+```
+
+**Step 4** — Build your backend to handle the API calls described in this document
 
 ---
 
-## Tech Stack (Your Choice)
+## Demo Credentials
 
-You may use any backend technology:
+Use these to preview the frontend without a backend running:
+
+| Field    | Value              |
+|----------|--------------------|
+| Email    | patient@demo.com   |
+| Password | demo123            |
+
+---
+
+## Tech Stack
+
+You can use **any** backend language or framework:
+
 - Node.js (Express / Fastify)
 - Python (Django / FastAPI / Flask)
 - Java (Spring Boot)
 - PHP (Laravel)
 - Go, Ruby, etc.
 
-**Database:** Any relational (MySQL, PostgreSQL) or NoSQL (MongoDB) database.
+**Database:** MySQL, PostgreSQL, MongoDB, Firebase — your choice.
 
 ---
 
-## Authentication
+## How the Frontend Talks to Your Backend
 
-All protected routes must receive a **Bearer token** in the request header:
+Every request the frontend makes includes a **token** in the header to identify the logged-in user:
 
 ```
 Authorization: Bearer <token>
 ```
 
-The token is stored in `localStorage` as `patient_token` after login.
+Your login endpoint must return this token. The frontend saves it and sends it with every future request automatically.
 
 ---
 
-## API Endpoints — Full Reference
+## Important Rules
+
+- Your login API **must** return a field named `token` — the frontend looks for this exact name
+- All dates must be in this format: `2026-04-15` (YYYY-MM-DD)
+- Enable **CORS** on your server — the frontend runs from a different origin
+- For file uploads, your endpoint must accept `multipart/form-data`
+- When something goes wrong, return an error with a `message` field explaining what happened
 
 ---
 
-### 1. Authentication (Login / Register)
+## How to Read This Document
+
+Each feature below shows:
+
+- **What it does** — plain English description
+- **Endpoints** — the URL and method the frontend calls
+- **What to receive** — fields the frontend sends to your server
+- **What to return** — fields your server must send back
+
+---
+
+---
+
+# Feature 1 — Login & Register
 
 **Page:** `index.html`
 
-This is the entry point. Patients can create an account or log in.
+Patients create an account or sign in. After a successful login or registration, your server must return a token. The frontend uses this token for all future requests.
 
 ---
 
-#### POST `/api/auth/register`
+### Register a New Patient
 
-Register a new patient account.
+**Frontend calls:** `POST /api/auth/register`
 
-**Request Body:**
-```json
-{
-  "name": "Priya Mehta",
-  "email": "priya@email.com",
-  "password": "securepass123",
-  "phone": "+91 9876543210",
-  "dob": "1995-06-15",
-  "gender": "Female",
-  "blood_group": "B+"
-}
-```
+**Your server receives these fields:**
 
-**Expected Response `200`:**
-```json
-{
-  "token": "jwt_token_here",
-  "user": {
-    "id": 1,
-    "name": "Priya Mehta",
-    "email": "priya@email.com",
-    "blood_group": "B+",
-    "gender": "Female"
-  }
-}
-```
+| Field        | Type   | Description                  |
+|--------------|--------|------------------------------|
+| name         | text   | Patient's full name          |
+| email        | email  | Patient's email address      |
+| password     | text   | Chosen password              |
+| phone        | text   | Phone number                 |
+| dob          | date   | Date of birth (YYYY-MM-DD)   |
+| gender       | text   | Male / Female / Other        |
+| blood_group  | text   | e.g. B+, O-, AB+             |
+
+**Your server must return:**
+
+| Field       | Type   | Description                        |
+|-------------|--------|------------------------------------|
+| token       | text   | Auth token for future requests     |
+| user.id     | number | Unique ID of the new patient       |
+| user.name   | text   | Patient's name                     |
+| user.email  | text   | Patient's email                    |
 
 ---
 
-#### POST `/api/auth/login`
+### Login
 
-**Request Body:**
-```json
-{
-  "email": "priya@email.com",
-  "password": "securepass123"
-}
-```
+**Frontend calls:** `POST /api/auth/login`
 
-**Expected Response `200`:**
-```json
-{
-  "token": "jwt_token_here",
-  "user": {
-    "id": 1,
-    "name": "Priya Mehta",
-    "email": "priya@email.com"
-  }
-}
-```
+**Your server receives:**
 
-**Error Response `401`:**
-```json
-{ "message": "Invalid email or password" }
-```
+| Field    | Type  | Description       |
+|----------|-------|-------------------|
+| email    | email | Patient's email   |
+| password | text  | Patient's password|
+
+**Your server must return:**
+
+| Field       | Type   | Description                    |
+|-------------|--------|--------------------------------|
+| token       | text   | Auth token                     |
+| user.id     | number | Patient's ID                   |
+| user.name   | text   | Patient's name                 |
+| user.email  | text   | Patient's email                |
+
+> If the email or password is wrong, return an error with `message: "Invalid email or password"`
 
 ---
 
-#### POST `/api/auth/logout`
+### Other Auth Endpoints
 
-Invalidate the token server-side (if using token blacklisting).
-
----
-
-#### GET `/api/auth/me`
-
-Returns the currently logged-in patient's basic info.
-
-**Response `200`:**
-```json
-{
-  "id": 1,
-  "name": "Priya Mehta",
-  "email": "priya@email.com"
-}
-```
+| Endpoint            | Method | What it does                          |
+|---------------------|--------|---------------------------------------|
+| /api/auth/logout    | POST   | End the session (invalidate token)    |
+| /api/auth/me        | GET    | Return the logged-in patient's info   |
 
 ---
 
-### 2. Dashboard
+---
+
+# Feature 2 — Dashboard
 
 **Page:** `dashboard.html`
 
-Displays a summary of the patient's health activity.
+The first page patients see after logging in. Shows a summary of their health activity — upcoming appointments, active prescriptions, recent lab reports, and health stats.
 
 ---
 
-#### GET `/api/dashboard`
+**Frontend calls:** `GET /api/dashboard`
 
-**Expected Response `200`:**
-```json
-{
-  "stats": {
-    "upcoming_appointments": 2,
-    "active_prescriptions": 3,
-    "lab_reports": 5,
-    "pending_bills": 1
-  },
-  "health_summary": {
-    "blood_pressure": "120/80 mmHg",
-    "blood_sugar": "95 mg/dL",
-    "heart_rate": "72 bpm",
-    "blood_group": "B+",
-    "weight": "68 kg",
-    "height": "165 cm"
-  },
-  "upcoming_appointments": [
-    {
-      "id": 1,
-      "doctor_name": "Dr. Arjun Sharma",
-      "specialty": "General Medicine",
-      "date": "2026-04-15",
-      "time": "10:00 AM",
-      "type": "In-clinic",
-      "status": "confirmed"
-    }
-  ],
-  "active_prescriptions": [
-    {
-      "id": 1,
-      "doctor_name": "Dr. Arjun Sharma",
-      "date": "2026-04-10",
-      "medicines": [{ "name": "Paracetamol" }]
-    }
-  ],
-  "recent_labs": [
-    {
-      "id": 1,
-      "test_name": "CBC",
-      "date": "2026-04-08",
-      "status": "Normal"
-    }
-  ]
-}
-```
+**Your server must return:**
+
+### Stats section (shown as 4 cards at the top)
+
+| Field                          | Type   | Description                          |
+|--------------------------------|--------|--------------------------------------|
+| stats.upcoming_appointments    | number | Count of upcoming appointments       |
+| stats.active_prescriptions     | number | Count of active prescriptions        |
+| stats.lab_reports              | number | Total lab reports                    |
+| stats.pending_bills            | number | Count of unpaid bills                |
+
+### Health summary section
+
+| Field                        | Type | Description              |
+|------------------------------|------|--------------------------|
+| health_summary.blood_pressure| text | e.g. 120/80 mmHg         |
+| health_summary.blood_sugar   | text | e.g. 95 mg/dL            |
+| health_summary.heart_rate    | text | e.g. 72 bpm              |
+| health_summary.blood_group   | text | e.g. B+                  |
+| health_summary.weight        | text | e.g. 68 kg               |
+| health_summary.height        | text | e.g. 165 cm              |
+
+### Upcoming appointments list (up to 3 shown)
+
+| Field                             | Type | Description                         |
+|-----------------------------------|------|-------------------------------------|
+| upcoming_appointments[].id        | number | Appointment ID                    |
+| upcoming_appointments[].doctor_name | text | Doctor's name                   |
+| upcoming_appointments[].specialty | text | Doctor's specialty                 |
+| upcoming_appointments[].date      | date | Appointment date                   |
+| upcoming_appointments[].time      | text | e.g. 10:00 AM                      |
+| upcoming_appointments[].type      | text | In-clinic / Online                 |
+| upcoming_appointments[].status    | text | confirmed / pending                |
+
+### Active prescriptions list (up to 3 shown)
+
+| Field                             | Type | Description              |
+|-----------------------------------|------|--------------------------|
+| active_prescriptions[].id         | number | Prescription ID        |
+| active_prescriptions[].doctor_name| text | Doctor's name           |
+| active_prescriptions[].date       | date | Date issued             |
+| active_prescriptions[].medicines  | list | At least: `[{ name }]` |
+
+### Recent lab reports (up to 3 shown)
+
+| Field                   | Type   | Description                  |
+|-------------------------|--------|------------------------------|
+| recent_labs[].id        | number | Report ID                    |
+| recent_labs[].test_name | text   | e.g. CBC, Lipid Profile      |
+| recent_labs[].date      | date   | Date of test                 |
+| recent_labs[].status    | text   | Normal / Abnormal            |
 
 ---
 
-### 3. Find Doctors
+---
+
+# Feature 3 — Find Doctors
 
 **Page:** `doctors.html`
 
-Patients search for and book appointments with doctors.
+Patients search for doctors by name or specialty, filter by availability, and book an appointment directly from this page.
 
 ---
 
-#### GET `/api/doctors/specialties`
+### Get list of specialties (for the filter dropdown)
 
-Returns list of available specialties for the filter dropdown.
+**Frontend calls:** `GET /api/doctors/specialties`
 
-**Response `200`:**
-```json
-[
-  { "id": 1, "name": "General Medicine" },
-  { "id": 2, "name": "Cardiology" },
-  { "id": 3, "name": "Dermatology" }
-]
-```
+**Your server must return a list where each item has:**
+
+| Field | Type   | Description             |
+|-------|--------|-------------------------|
+| id    | number | Specialty ID            |
+| name  | text   | e.g. Cardiology, ENT    |
 
 ---
 
-#### GET `/api/doctors`
+### Search doctors
 
-**Query Parameters:**
+**Frontend calls:** `GET /api/doctors`
 
-| Param      | Type   | Description                         |
-|------------|--------|-------------------------------------|
-| `search`   | string | Search by name or specialty         |
-| `specialty`| string | Filter by specialty name or ID      |
-| `location` | string | `"Online"` or `"In-clinic"`         |
-| `sort`     | string | `rating`, `fee_asc`, `fee_desc`, `experience` |
+**The frontend may send these as URL filters:**
 
-**Response `200`:**
-```json
-[
-  {
-    "id": 1,
-    "name": "Dr. Arjun Sharma",
-    "specialty": "General Medicine",
-    "experience": 8,
-    "rating": 4.7,
-    "fee": 500,
-    "availability": "Mon–Fri",
-    "tags": ["General Medicine", "Diabetes", "Hypertension"],
-    "in_clinic": true,
-    "online": true
-  }
-]
-```
+| Filter     | Type | Description                                    |
+|------------|------|------------------------------------------------|
+| search     | text | Doctor name or specialty keyword               |
+| specialty  | text | Filter by specialty                            |
+| location   | text | Online or In-clinic                            |
+| sort       | text | rating / fee_asc / fee_desc / experience       |
+
+**Your server must return a list where each doctor has:**
+
+| Field        | Type   | Description                        |
+|--------------|--------|------------------------------------|
+| id           | number | Doctor's ID                        |
+| name         | text   | Doctor's full name                 |
+| specialty    | text   | e.g. General Medicine              |
+| experience   | number | Years of experience                |
+| rating       | number | e.g. 4.7 (out of 5)               |
+| fee          | number | Consultation fee in ₹              |
+| availability | text   | e.g. Mon–Fri                       |
+| tags         | list   | List of specialties/keywords       |
 
 ---
 
-#### GET `/api/doctors/:id`
+### Get one doctor's full profile
 
-Returns detailed profile of a single doctor.
+**Frontend calls:** `GET /api/doctors/:id`
 
-**Response `200`:**
-```json
-{
-  "id": 1,
-  "name": "Dr. Arjun Sharma",
-  "specialty": "General Medicine",
-  "experience": 8,
-  "rating": 4.7,
-  "reviews": 134,
-  "fee": 500,
-  "bio": "Senior physician with expertise in diabetes management...",
-  "license_no": "MCI-12345",
-  "availability": "Mon–Fri, 9AM–5PM",
-  "hospital": "City Health Clinic"
-}
-```
+**Your server must return:**
 
----
-
-#### GET `/api/doctors/:id/slots`
-
-Returns available time slots for a doctor on a specific date.
-
-**Query Parameters:** `?date=2026-04-15`
-
-**Response `200`:**
-```json
-{
-  "slots": [
-    { "time": "09:00 AM", "available": true },
-    { "time": "09:30 AM", "available": false },
-    { "time": "10:00 AM", "available": true }
-  ]
-}
-```
+| Field        | Type   | Description                             |
+|--------------|--------|-----------------------------------------|
+| id           | number | Doctor's ID                             |
+| name         | text   | Full name                               |
+| specialty    | text   | Specialization                          |
+| experience   | number | Years of experience                     |
+| rating       | number | Rating out of 5                         |
+| reviews      | number | Number of reviews                       |
+| fee          | number | Consultation fee in ₹                   |
+| bio          | text   | Short professional description          |
+| license_no   | text   | Medical license number                  |
+| availability | text   | Working hours description               |
+| hospital     | text   | Hospital or clinic name                 |
 
 ---
 
-### 4. Appointments
+### Get available time slots for a doctor
+
+**Frontend calls:** `GET /api/doctors/:id/slots?date=2026-04-15`
+
+**Your server must return a list of slots:**
+
+| Field     | Type    | Description                  |
+|-----------|---------|------------------------------|
+| time      | text    | e.g. 09:00 AM                |
+| available | boolean | true = free, false = booked  |
+
+---
+
+---
+
+# Feature 4 — Appointments
 
 **Page:** `appointments.html`
 
-Patients view, book, reschedule, and cancel appointments.
+Patients can book new appointments, view upcoming and past ones, reschedule, and cancel.
 
 ---
 
-#### POST `/api/appointments`
+### Book an appointment
 
-Book a new appointment.
+**Frontend calls:** `POST /api/appointments`
 
-**Request Body:**
-```json
-{
-  "doctor_id": 1,
-  "date": "2026-04-15",
-  "time": "10:00 AM",
-  "type": "in-clinic",
-  "reason": "Fever and headache for 3 days"
-}
-```
+**Your server receives:**
 
-**Response `201`:**
-```json
-{
-  "id": 10,
-  "status": "pending",
-  "message": "Appointment request sent to doctor"
-}
-```
+| Field      | Type   | Description                        |
+|------------|--------|------------------------------------|
+| doctor_id  | number | ID of the selected doctor          |
+| date       | date   | Requested date                     |
+| time       | text   | Requested time slot                |
+| type       | text   | in-clinic or online                |
+| reason     | text   | Patient's reason for visiting      |
+
+**Your server must return:**
+
+| Field   | Type   | Description                          |
+|---------|--------|--------------------------------------|
+| id      | number | New appointment ID                   |
+| status  | text   | pending (doctor needs to confirm)    |
+| message | text   | Confirmation message                 |
 
 ---
 
-#### GET `/api/appointments`
+### Get appointments list
 
-**Query Parameters:** `?status=upcoming` | `past` | `cancelled`
+**Frontend calls:** `GET /api/appointments?status=upcoming`
 
-**Response `200`:**
-```json
-{
-  "appointments": [
-    {
-      "id": 10,
-      "doctor_name": "Dr. Arjun Sharma",
-      "specialty": "General Medicine",
-      "date": "2026-04-15",
-      "time": "10:00 AM",
-      "type": "In-clinic",
-      "consultation_type": "in-clinic",
-      "reason": "Fever and headache",
-      "status": "confirmed",
-      "cancel_reason": null,
-      "cancelled_at": null
-    }
-  ]
-}
-```
+The `status` filter can be: `upcoming`, `past`, or `cancelled`
+
+**Your server must return a list where each appointment has:**
+
+| Field              | Type   | Description                            |
+|--------------------|--------|----------------------------------------|
+| id                 | number | Appointment ID                         |
+| doctor_name        | text   | Doctor's name                          |
+| specialty          | text   | Doctor's specialty                     |
+| date               | date   | Appointment date                       |
+| time               | text   | Appointment time                       |
+| consultation_type  | text   | in-clinic or online                    |
+| reason             | text   | Patient's reason                       |
+| status             | text   | pending / confirmed / completed        |
+| cancel_reason      | text   | Reason (only for cancelled ones)       |
+| cancelled_at       | date   | When it was cancelled                  |
 
 ---
 
-#### GET `/api/appointments/:id`
+### Reschedule an appointment
 
-Returns details of a single appointment.
+**Frontend calls:** `PUT /api/appointments/:id`
 
----
+**Your server receives:**
 
-#### PUT `/api/appointments/:id`
-
-Reschedule an appointment.
-
-**Request Body:**
-```json
-{
-  "date": "2026-04-20",
-  "time": "11:00 AM",
-  "reason": "Conflict with work schedule"
-}
-```
+| Field  | Type | Description              |
+|--------|------|--------------------------|
+| date   | date | New date                 |
+| time   | text | New time slot            |
+| reason | text | Reason for rescheduling  |
 
 ---
 
-#### DELETE `/api/appointments/:id`
+### Cancel an appointment
 
-Cancel an appointment. The frontend sends no body — you may optionally accept a `reason` query param.
+**Frontend calls:** `DELETE /api/appointments/:id`
 
----
-
-#### GET `/api/appointments/:id/summary`
-
-Returns post-consultation summary.
-
-**Response `200`:**
-```json
-{
-  "diagnosis": "Viral fever",
-  "notes": "Rest for 3 days, stay hydrated",
-  "follow_up": "1 week"
-}
-```
+No data is sent. Just delete or mark the appointment as cancelled.
 
 ---
 
-### 5. Medical Records
+### Get appointment consultation summary
+
+**Frontend calls:** `GET /api/appointments/:id/summary`
+
+**Your server must return:**
+
+| Field     | Type | Description                       |
+|-----------|------|-----------------------------------|
+| diagnosis | text | What the doctor diagnosed         |
+| notes     | text | Doctor's notes from the visit     |
+| follow_up | text | e.g. 1 week, 1 month              |
+
+---
+
+---
+
+# Feature 5 — Medical Records
 
 **Page:** `medical-records.html`
 
-Patients upload and view their personal medical documents.
+Patients upload and view their own medical documents (reports, scans, discharge summaries, etc.).
 
 ---
 
-#### GET `/api/records`
+### Get records list
 
-**Query Parameters:** `?type=&search=`
+**Frontend calls:** `GET /api/records?type=&search=`
 
-**Response `200`:**
-```json
-{
-  "records": [
-    {
-      "id": 1,
-      "title": "Blood Test Report - Jan 2026",
-      "type": "Blood Test",
-      "date": "2026-01-10",
-      "source": "City Lab",
-      "notes": "Routine annual checkup",
-      "file_url": "https://yourstorage.com/files/report.pdf",
-      "file_name": "blood_test_jan.pdf",
-      "created_at": "2026-01-11T10:30:00Z"
-    }
-  ]
-}
-```
+**Your server must return a list where each record has:**
+
+| Field      | Type   | Description                                |
+|------------|--------|--------------------------------------------|
+| id         | number | Record ID                                  |
+| title      | text   | e.g. Blood Test - Jan 2026                 |
+| type       | text   | Blood Test / X-Ray / Discharge Summary etc.|
+| date       | date   | Date of the record                         |
+| source     | text   | Hospital or lab name                       |
+| notes      | text   | Any notes about the record                 |
+| file_url   | text   | Link to view/download the file             |
+| file_name  | text   | Original file name                         |
+| created_at | date   | When it was uploaded                       |
 
 ---
 
-#### POST `/api/records`
+### Upload a new record
 
-Upload a new medical record. Accepts `multipart/form-data`.
+**Frontend calls:** `POST /api/records`
 
-**Form Fields:**
+This is a **file upload** request (multipart/form-data).
 
-| Field    | Type   | Required |
-|----------|--------|----------|
-| `title`  | string | Yes      |
-| `type`   | string | Yes      |
-| `date`   | date   | Yes      |
-| `source` | string | No       |
-| `notes`  | string | No       |
-| `file`   | file   | No       |
+**Your server receives:**
 
-**Response `201`:**
-```json
-{ "id": 5, "message": "Record uploaded successfully" }
-```
+| Field  | Type   | Required | Description                          |
+|--------|--------|----------|--------------------------------------|
+| title  | text   | Yes      | Name/title of the record             |
+| type   | text   | Yes      | Category of the record               |
+| date   | date   | Yes      | Date the record was created          |
+| source | text   | No       | Hospital or doctor name              |
+| notes  | text   | No       | Additional notes                     |
+| file   | file   | No       | The document (PDF, JPG, PNG, DOC)    |
 
----
+**Your server must return:**
 
-#### GET `/api/records/:id`
-
-Returns a single record with full details.
+| Field   | Type   | Description              |
+|---------|--------|--------------------------|
+| id      | number | ID of the new record     |
+| message | text   | Success message          |
 
 ---
 
-#### DELETE `/api/records/:id`
+### Get one record's full details
 
-Deletes the record and its associated file.
+**Frontend calls:** `GET /api/records/:id`
+
+Returns all fields listed in the "Get records list" table above.
 
 ---
 
-### 6. Prescriptions
+### Delete a record
+
+**Frontend calls:** `DELETE /api/records/:id`
+
+Delete the record and its file from storage.
+
+---
+
+---
+
+# Feature 6 — Prescriptions
 
 **Page:** `prescriptions.html`
 
-Patients view prescriptions issued by doctors. **Patients cannot create prescriptions.**
+Patients view prescriptions issued by their doctors. Patients **cannot create** prescriptions — only doctors can.
 
 ---
 
-#### GET `/api/prescriptions`
+### Get prescriptions list
 
-**Query Parameters:** `?status=active` | `expired`
+**Frontend calls:** `GET /api/prescriptions?status=active`
 
-**Response `200`:**
-```json
-{
-  "prescriptions": [
-    {
-      "id": 1,
-      "doctor_name": "Dr. Arjun Sharma",
-      "specialty": "General Medicine",
-      "date": "2026-04-10",
-      "valid_until": "2026-05-10",
-      "diagnosis": "Viral Fever",
-      "status": "active",
-      "instructions": "Take after meals. Avoid cold drinks.",
-      "medicines": [
-        {
-          "name": "Paracetamol",
-          "strength": "500mg",
-          "dosage": "1 tablet",
-          "frequency": "Twice daily",
-          "duration": "5 days",
-          "instructions": "After meals"
-        },
-        {
-          "name": "Cetirizine",
-          "strength": "10mg",
-          "dosage": "1 tablet",
-          "frequency": "Once daily",
-          "duration": "5 days",
-          "instructions": "At bedtime"
-        }
-      ]
-    }
-  ]
-}
-```
+The `status` filter can be: `active` or `expired`
+
+**Your server must return a list where each prescription has:**
+
+| Field              | Type   | Description                                 |
+|--------------------|--------|---------------------------------------------|
+| id                 | number | Prescription ID                             |
+| doctor_name        | text   | Name of the doctor who issued it            |
+| specialty          | text   | Doctor's specialty                          |
+| date               | date   | Date issued                                 |
+| valid_until        | date   | Expiry date                                 |
+| diagnosis          | text   | What it was prescribed for                 |
+| status             | text   | active or expired                           |
+| instructions       | text   | General instructions (e.g. take after meals)|
+| medicines          | list   | List of medicines (see below)               |
+
+**Each medicine in the list must have:**
+
+| Field        | Type | Description                         |
+|--------------|------|-------------------------------------|
+| name         | text | Medicine name                       |
+| strength     | text | e.g. 500mg                          |
+| dosage       | text | e.g. 1 tablet                       |
+| frequency    | text | e.g. Twice daily                    |
+| duration     | text | e.g. 5 days                         |
+| instructions | text | e.g. After meals                    |
 
 ---
 
-#### GET `/api/prescriptions/:id`
+### Get one full prescription
 
-Returns full details of a single prescription including all medicines, diagnosis, and validity.
+**Frontend calls:** `GET /api/prescriptions/:id`
+
+Returns all the fields above for a single prescription.
 
 ---
 
-### 7. Lab Reports
+---
+
+# Feature 7 — Lab Reports
 
 **Page:** `lab-reports.html`
 
-Patients view lab test results ordered by doctors.
+Patients view diagnostic test results ordered by their doctors.
 
 ---
 
-#### GET `/api/lab-reports`
+### Get lab reports list
 
-**Query Parameters:** `?status=pending|ready&from=&to=&search=`
+**Frontend calls:** `GET /api/lab-reports?status=&from=&to=&search=`
 
-**Response `200`:**
-```json
-{
-  "reports": [
-    {
-      "id": 1,
-      "test_name": "Complete Blood Count (CBC)",
-      "doctor_name": "Dr. Arjun Sharma",
-      "date": "2026-04-08",
-      "status": "ready",
-      "has_abnormal": false,
-      "results": [
-        {
-          "parameter": "Haemoglobin",
-          "value": "14.2",
-          "unit": "g/dL",
-          "reference_range": "13.5–17.5",
-          "flag": null
-        },
-        {
-          "parameter": "WBC Count",
-          "value": "11.8",
-          "unit": "10³/µL",
-          "reference_range": "4.5–11.0",
-          "flag": "High"
-        }
-      ]
-    }
-  ]
-}
-```
+**Filters the frontend may send:**
 
----
+| Filter | Type | Description                          |
+|--------|------|--------------------------------------|
+| status | text | pending (not ready) or ready         |
+| from   | date | Show reports from this date          |
+| to     | date | Show reports up to this date         |
+| search | text | Search by test name                  |
 
-#### GET `/api/lab-reports/:id`
+**Your server must return a list where each report has:**
 
-Returns full lab report with all parameters, lab name, and sample type.
+| Field        | Type    | Description                              |
+|--------------|---------|------------------------------------------|
+| id           | number  | Report ID                                |
+| test_name    | text    | e.g. CBC, Lipid Profile                  |
+| doctor_name  | text    | Doctor who ordered the test              |
+| date         | date    | Date the test was taken                  |
+| status       | text    | pending or ready                         |
+| has_abnormal | boolean | true if any result is outside normal range|
+| results      | list    | List of test parameters (if ready)       |
 
-**Response `200`:**
-```json
-{
-  "id": 1,
-  "test_name": "Complete Blood Count (CBC)",
-  "doctor_name": "Dr. Arjun Sharma",
-  "date": "2026-04-08",
-  "lab_name": "Apollo Diagnostics",
-  "sample_type": "Blood",
-  "status": "ready",
-  "file_url": "https://yourstorage.com/reports/cbc.pdf",
-  "remarks": "Slightly elevated WBC. Suggest follow-up in 2 weeks.",
-  "results": [ ... ]
-}
-```
+**Each result in the list must have:**
+
+| Field           | Type | Description                       |
+|-----------------|------|-----------------------------------|
+| parameter       | text | e.g. Haemoglobin, WBC Count       |
+| value           | text | The measured value                |
+| unit            | text | e.g. g/dL, mg/dL                  |
+| reference_range | text | Normal range e.g. 13.5–17.5       |
+| flag            | text | High / Low / null (null = Normal) |
 
 ---
 
-### 8. Pharmacy
+### Get one full lab report
+
+**Frontend calls:** `GET /api/lab-reports/:id`
+
+Returns all the fields above plus:
+
+| Field      | Type | Description                         |
+|------------|------|-------------------------------------|
+| lab_name   | text | Name of the diagnostic lab          |
+| sample_type| text | e.g. Blood, Urine                   |
+| file_url   | text | Link to download the PDF report     |
+| remarks    | text | Pathologist's comments              |
+
+---
+
+---
+
+# Feature 8 — Pharmacy
 
 **Page:** `pharmacy.html`
 
-Patients search for medicines and place orders for home delivery.
+Patients search for medicines, add them to a cart, and place a home delivery order.
 
 ---
 
-#### GET `/api/medicines`
+### Search medicines
 
-**Query Parameters:** `?search=&category=`
+**Frontend calls:** `GET /api/medicines?search=&category=`
 
-**Response `200`:**
-```json
-{
-  "medicines": [
-    {
-      "id": 1,
-      "name": "Paracetamol 500mg",
-      "generic_name": "Acetaminophen",
-      "dosage_form": "Tablet",
-      "category": "Painkillers",
-      "price": 25.50,
-      "in_stock": true,
-      "manufacturer": "Cipla"
-    }
-  ]
-}
-```
+**Your server must return a list where each medicine has:**
+
+| Field        | Type    | Description                            |
+|--------------|---------|----------------------------------------|
+| id           | number  | Medicine ID                            |
+| name         | text    | Medicine name e.g. Paracetamol 500mg   |
+| generic_name | text    | Generic/chemical name                  |
+| dosage_form  | text    | Tablet / Syrup / Injection etc.        |
+| category     | text    | e.g. Painkillers, Antibiotics          |
+| price        | number  | Price in ₹                             |
+| in_stock     | boolean | true = available, false = out of stock |
+| manufacturer | text    | Company name                           |
 
 ---
 
-#### POST `/api/orders`
+### Place an order
 
-Place a medicine order.
+**Frontend calls:** `POST /api/orders`
 
-**Request Body:**
-```json
-{
-  "items": [
-    { "medicine_id": 1, "qty": 2 },
-    { "medicine_id": 5, "qty": 1 }
-  ],
-  "address": "123 Main St, Mumbai 400001",
-  "payment_method": "cod"
-}
-```
+**Your server receives:**
 
-**Response `201`:**
-```json
-{
-  "order_id": 101,
-  "total": 76.50,
-  "estimated_delivery": "2026-04-14",
-  "message": "Order placed successfully"
-}
-```
+| Field          | Type   | Description                              |
+|----------------|--------|------------------------------------------|
+| items          | list   | List of medicines and quantities         |
+| items[].medicine_id | number | ID of the medicine                |
+| items[].qty    | number | How many units ordered                   |
+| address        | text   | Full delivery address                    |
+| payment_method | text   | cod / online / upi                       |
+
+**Your server must return:**
+
+| Field              | Type   | Description                     |
+|--------------------|--------|---------------------------------|
+| order_id           | number | ID of the placed order          |
+| total              | number | Total amount in ₹               |
+| estimated_delivery | date   | Expected delivery date          |
+| message            | text   | Confirmation message            |
 
 ---
 
-#### GET `/api/orders`
+### Get order history
 
-Returns the patient's order history.
+**Frontend calls:** `GET /api/orders`
 
-**Response `200`:**
-```json
-{
-  "orders": [
-    {
-      "id": 101,
-      "item_count": 3,
-      "total": 76.50,
-      "status": "processing",
-      "created_at": "2026-04-12T09:00:00Z"
-    }
-  ]
-}
-```
+**Your server must return a list where each order has:**
+
+| Field      | Type   | Description                                     |
+|------------|--------|-------------------------------------------------|
+| id         | number | Order ID                                        |
+| item_count | number | Number of items in the order                    |
+| total      | number | Total amount in ₹                               |
+| status     | text   | processing / shipped / delivered / cancelled    |
+| created_at | date   | When the order was placed                       |
 
 ---
 
-### 9. Billing & Payments
+---
+
+# Feature 9 — Billing & Payments
 
 **Page:** `billing.html`
 
-Patients view invoices and make payments.
+Patients view invoices generated by doctors and make payments.
 
 ---
 
-#### GET `/api/bills`
+### Get bills list
 
-**Query Parameters:** `?status=pending|paid|overdue&search=`
+**Frontend calls:** `GET /api/bills?status=&search=`
 
-**Response `200`:**
-```json
-{
-  "bills": [
-    {
-      "id": 1,
-      "invoice_no": "INV-2026-001",
-      "description": "Consultation Fee",
-      "doctor_name": "Dr. Arjun Sharma",
-      "date": "2026-04-10",
-      "due_date": "2026-04-20",
-      "amount": 500,
-      "status": "pending",
-      "paid_at": null,
-      "payment_method": null
-    }
-  ]
-}
-```
+The `status` filter can be: `pending`, `paid`, or `overdue`
+
+**Your server must return a list where each bill has:**
+
+| Field        | Type   | Description                               |
+|--------------|--------|-------------------------------------------|
+| id           | number | Bill ID                                   |
+| invoice_no   | text   | e.g. INV-2026-001                         |
+| description  | text   | Short description of what was charged     |
+| doctor_name  | text   | Doctor who generated the invoice          |
+| date         | date   | Invoice date                              |
+| due_date     | date   | Payment due date                          |
+| amount       | number | Total amount in ₹                         |
+| status       | text   | pending / paid / overdue                  |
+| paid_at      | date   | When it was paid (null if not paid yet)   |
+| payment_method | text | How it was paid (null if not paid yet)    |
 
 ---
 
-#### GET `/api/bills/:id`
+### Get one invoice's full details
 
-Returns invoice details with line items.
+**Frontend calls:** `GET /api/bills/:id`
 
-**Response `200`:**
-```json
-{
-  "id": 1,
-  "invoice_no": "INV-2026-001",
-  "patient_name": "Priya Mehta",
-  "doctor_name": "Dr. Arjun Sharma",
-  "date": "2026-04-10",
-  "due_date": "2026-04-20",
-  "amount": 700,
-  "status": "pending",
-  "items": [
-    { "name": "Consultation Fee", "amount": 500 },
-    { "name": "ECG Test", "amount": 200 }
-  ]
-}
-```
+Returns all fields above plus:
+
+| Field          | Type   | Description                           |
+|----------------|--------|---------------------------------------|
+| patient_name   | text   | Patient's name                        |
+| items          | list   | Line items (what was charged for)     |
+| items[].name   | text   | e.g. Consultation Fee, ECG Test       |
+| items[].amount | number | Amount for that item in ₹             |
 
 ---
 
-#### POST `/api/bills/:id/pay`
+### Pay a bill
 
-Mark an invoice as paid.
+**Frontend calls:** `POST /api/bills/:id/pay`
 
-**Request Body:**
-```json
-{
-  "payment_method": "upi",
-  "notes": "UPI ref: TXN123456"
-}
-```
+**Your server receives:**
 
-**Response `200`:**
-```json
-{ "message": "Payment recorded successfully", "status": "paid" }
-```
+| Field          | Type | Description                          |
+|----------------|------|--------------------------------------|
+| payment_method | text | upi / card / netbanking / cash       |
+| notes          | text | Optional transaction reference       |
+
+**Your server must return:**
+
+| Field   | Type | Description             |
+|---------|------|-------------------------|
+| message | text | Payment success message |
+| status  | text | paid                    |
 
 ---
 
-### 10. Profile
+---
+
+# Feature 10 — Profile
 
 **Page:** `profile.html`
 
@@ -769,129 +731,124 @@ Patients view and update their personal and health information.
 
 ---
 
-#### GET `/api/profile`
+### Get profile
 
-**Response `200`:**
-```json
-{
-  "id": 1,
-  "name": "Priya Mehta",
-  "email": "priya@email.com",
-  "phone": "+91 9876543210",
-  "dob": "1995-06-15",
-  "gender": "Female",
-  "blood_group": "B+",
-  "height": 165,
-  "weight": 68,
-  "blood_pressure": "120/80 mmHg",
-  "address": "123 Main St, Mumbai",
-  "allergies": "Penicillin, Dust",
-  "conditions": "Mild asthma"
-}
-```
+**Frontend calls:** `GET /api/profile`
 
----
+**Your server must return:**
 
-#### PUT `/api/profile`
-
-Update profile fields. Any subset of fields may be sent.
-
-**Request Body:**
-```json
-{
-  "name": "Priya Mehta",
-  "phone": "+91 9876543210",
-  "address": "New address",
-  "blood_group": "B+",
-  "height": 165,
-  "weight": 70,
-  "allergies": "Penicillin",
-  "conditions": "None"
-}
-```
+| Field      | Type   | Description                          |
+|------------|--------|--------------------------------------|
+| id         | number | Patient ID                           |
+| name       | text   | Full name                            |
+| email      | text   | Email address                        |
+| phone      | text   | Phone number                         |
+| dob        | date   | Date of birth                        |
+| gender     | text   | Male / Female / Other                |
+| blood_group| text   | e.g. B+                              |
+| height     | number | Height in cm                         |
+| weight     | number | Weight in kg                         |
+| blood_pressure | text | e.g. 120/80 mmHg                |
+| address    | text   | Home address                         |
+| allergies  | text   | Known allergies                      |
+| conditions | text   | Chronic conditions                   |
 
 ---
 
-#### PUT `/api/profile/password`
+### Update profile
 
-**Request Body:**
-```json
-{
-  "current_password": "oldpass",
-  "new_password": "newpass123"
-}
-```
+**Frontend calls:** `PUT /api/profile`
 
-**Error `400` if current password is wrong:**
-```json
-{ "message": "Current password is incorrect" }
-```
+Accepts any subset of the fields listed above. Update only what is sent.
 
 ---
 
-#### DELETE `/api/profile`
+### Change password
 
-Permanently deletes the patient's account and all associated data.
+**Frontend calls:** `PUT /api/profile/password`
+
+**Your server receives:**
+
+| Field            | Type | Description           |
+|------------------|------|-----------------------|
+| current_password | text | Their current password|
+| new_password     | text | The new password      |
+
+> If the current password is wrong, return an error: `message: "Current password is incorrect"`
 
 ---
 
-### 11. Notifications
+### Delete account
+
+**Frontend calls:** `DELETE /api/profile`
+
+Permanently delete the patient and all their data.
+
+---
+
+---
+
+# Feature 11 — Notifications
 
 **Page:** `notifications.html`
 
-Patients receive alerts for appointments, lab results, bills, etc.
+Patients receive alerts for appointment updates, prescription issuance, lab results, bills, etc. Your backend should create notifications automatically when those events happen.
 
 ---
 
-#### GET `/api/notifications`
+### Get all notifications
 
-**Response `200`:**
-```json
-{
-  "notifications": [
-    {
-      "id": 1,
-      "type": "appointment",
-      "title": "Appointment Confirmed",
-      "message": "Your appointment with Dr. Arjun on Apr 15 is confirmed.",
-      "is_read": false,
-      "created_at": "2026-04-12T08:00:00Z"
-    },
-    {
-      "id": 2,
-      "type": "lab",
-      "title": "Lab Results Ready",
-      "message": "Your CBC test results are now available.",
-      "is_read": true,
-      "created_at": "2026-04-11T15:30:00Z"
-    }
-  ]
-}
-```
+**Frontend calls:** `GET /api/notifications`
 
-**Notification `type` values:** `appointment`, `prescription`, `lab`, `billing`, `emergency`, `system`
+**Your server must return a list where each notification has:**
+
+| Field      | Type    | Description                                                    |
+|------------|---------|----------------------------------------------------------------|
+| id         | number  | Notification ID                                                |
+| type       | text    | appointment / prescription / lab / billing / emergency / system|
+| title      | text    | Short heading e.g. "Appointment Confirmed"                     |
+| message    | text    | Full message text                                              |
+| is_read    | boolean | false = unread (shown highlighted), true = already seen        |
+| created_at | date    | When the notification was created                              |
+
+**When to automatically create notifications:**
+
+| Event                           | Notification to send                           |
+|---------------------------------|------------------------------------------------|
+| Doctor confirms appointment     | "Your appointment has been confirmed"          |
+| Doctor cancels appointment      | "Your appointment was cancelled"               |
+| Doctor issues a prescription    | "New prescription available"                   |
+| Lab results are ready           | "Your lab test results are ready"              |
+| A new invoice is generated      | "You have a new bill from Dr. X"               |
+| Appointment is rescheduled      | "Your appointment has been rescheduled"        |
 
 ---
 
-#### PUT `/api/notifications/:id/read`
+### Mark one notification as read
 
-Mark a single notification as read. No body required.
+**Frontend calls:** `PUT /api/notifications/:id/read`
 
----
-
-#### PUT `/api/notifications/read-all`
-
-Mark all notifications as read. No body required.
+No data is sent. Just mark that notification as read.
 
 ---
 
-#### DELETE `/api/notifications/:id`
+### Mark all notifications as read
 
-Delete a single notification.
+**Frontend calls:** `PUT /api/notifications/read-all`
+
+No data is sent. Mark every notification for this patient as read.
 
 ---
 
-### 12. Emergency SOS
+### Delete a notification
+
+**Frontend calls:** `DELETE /api/notifications/:id`
+
+---
+
+---
+
+# Feature 12 — Emergency SOS
 
 **Page:** `emergency.html`
 
@@ -899,149 +856,127 @@ Patients can trigger an SOS alert, manage emergency contacts, and find nearby ho
 
 ---
 
-#### GET `/api/emergency/contacts`
+### Get emergency contacts
 
-**Response `200`:**
-```json
-{
-  "contacts": [
-    {
-      "id": 1,
-      "name": "Rohan Mehta",
-      "relation": "Spouse",
-      "phone": "+91 9876500001",
-      "is_primary": true
-    }
-  ]
-}
-```
+**Frontend calls:** `GET /api/emergency/contacts`
+
+**Your server must return a list where each contact has:**
+
+| Field      | Type    | Description                               |
+|------------|---------|-------------------------------------------|
+| id         | number  | Contact ID                                |
+| name       | text    | Contact's full name                       |
+| relation   | text    | e.g. Spouse, Parent, Sibling              |
+| phone      | text    | Contact's phone number                    |
+| is_primary | boolean | true = main contact (called first)        |
 
 ---
 
-#### POST `/api/emergency/contacts`
+### Add an emergency contact
 
-**Request Body:**
-```json
-{
-  "name": "Rohan Mehta",
-  "relation": "Spouse",
-  "phone": "+91 9876500001",
-  "is_primary": true
-}
-```
+**Frontend calls:** `POST /api/emergency/contacts`
 
----
+**Your server receives:**
 
-#### PUT `/api/emergency/contacts/:id`
-
-Update an existing emergency contact.
+| Field      | Type    | Required | Description                       |
+|------------|---------|----------|-----------------------------------|
+| name       | text    | Yes      | Contact's name                    |
+| relation   | text    | Yes      | Relationship                      |
+| phone      | text    | Yes      | Phone number                      |
+| is_primary | boolean | No       | Set as the primary contact        |
 
 ---
 
-#### DELETE `/api/emergency/contacts/:id`
+### Update a contact
 
-Delete an emergency contact.
+**Frontend calls:** `PUT /api/emergency/contacts/:id`
+
+Accepts the same fields as adding a contact. Update only what is sent.
 
 ---
 
-#### POST `/api/emergency/sos`
+### Delete a contact
 
-Trigger an SOS alert. Should notify all emergency contacts and nearby hospitals.
+**Frontend calls:** `DELETE /api/emergency/contacts/:id`
 
-**Request Body:**
-```json
-{
-  "latitude": 19.0760,
-  "longitude": 72.8777,
-  "message": "Chest pain, difficulty breathing"
-}
-```
+---
 
-**Expected Behavior:**
-- Send SMS/notification to all emergency contacts
-- Share patient's medical summary (blood group, allergies, conditions)
+### Trigger SOS alert
+
+**Frontend calls:** `POST /api/emergency/sos`
+
+**Your server receives:**
+
+| Field     | Type   | Description                              |
+|-----------|--------|------------------------------------------|
+| latitude  | number | Patient's current latitude (from GPS)    |
+| longitude | number | Patient's current longitude (from GPS)   |
+| message   | text   | e.g. "Chest pain, difficulty breathing"  |
+
+**What your server must do:**
+- Notify all saved emergency contacts (SMS or any method)
+- Include the patient's blood group, allergies, and conditions in the alert
 - Log the SOS event with timestamp
 
-**Response `200`:**
-```json
-{
-  "message": "SOS alert sent to 2 contacts",
-  "alert_id": "SOS-20260412-001"
-}
-```
+**Your server must return:**
+
+| Field    | Type   | Description                           |
+|----------|--------|---------------------------------------|
+| message  | text   | e.g. "SOS alert sent to 2 contacts"   |
+| alert_id | text   | Unique ID for this SOS event          |
 
 ---
 
-#### GET `/api/emergency/hospitals`
+### Find nearby hospitals
 
-Find hospitals near the patient's location.
+**Frontend calls:** `GET /api/emergency/hospitals?lat=19.07&lng=72.87&radius=5`
 
-**Query Parameters:** `?lat=19.07&lng=72.87&radius=5`
+**Query parameters sent by frontend:**
 
-**Response `200`:**
-```json
-{
-  "hospitals": [
-    {
-      "name": "City General Hospital",
-      "address": "MG Road, Mumbai",
-      "phone": "+91 22 1234 5678",
-      "distance": 1.2
-    },
-    {
-      "name": "Apollo Clinic",
-      "address": "Andheri West, Mumbai",
-      "phone": "+91 22 9876 5432",
-      "distance": 2.8
-    }
-  ]
-}
-```
+| Param  | Type   | Description                    |
+|--------|--------|--------------------------------|
+| lat    | number | Patient's current latitude     |
+| lng    | number | Patient's current longitude    |
+| radius | number | Search radius in km            |
+
+**Your server must return a list where each hospital has:**
+
+| Field    | Type   | Description                       |
+|----------|--------|-----------------------------------|
+| name     | text   | Hospital name                     |
+| address  | text   | Full address                      |
+| phone    | text   | Contact number                    |
+| distance | number | Distance from patient in km       |
 
 ---
 
-## General Error Format
+---
 
-All errors should follow this structure:
+## Error Handling
 
-```json
-{
-  "message": "Human-readable error description"
-}
-```
+Whenever something goes wrong, your server must return an appropriate HTTP status code and a `message` field:
 
-| HTTP Code | Meaning                        |
-|-----------|--------------------------------|
-| `200`     | Success                        |
-| `201`     | Created                        |
-| `400`     | Bad request / validation error |
-| `401`     | Unauthenticated                |
-| `403`     | Forbidden                      |
-| `404`     | Not found                      |
-| `500`     | Internal server error          |
+| Situation                         | Status Code | Example message                    |
+|-----------------------------------|-------------|------------------------------------|
+| Wrong email or password           | 401         | Invalid email or password          |
+| Missing required field            | 400         | Name is required                   |
+| Record not found                  | 404         | Appointment not found              |
+| Not logged in                     | 401         | Authentication required            |
+| Trying to access someone else's data | 403     | Access denied                      |
+| Something broke on the server     | 500         | Internal server error              |
 
 ---
 
 ## Evaluation Criteria
 
-| Criteria                          | Weight |
-|-----------------------------------|--------|
-| All 12 features working correctly | 40%    |
-| API response structure accuracy   | 20%    |
-| Authentication & security         | 15%    |
-| Error handling                    | 10%    |
-| Code quality & structure          | 10%    |
-| Bonus: File uploads working       | 5%     |
-
----
-
-## Notes for Participants
-
-- **Do not modify** the frontend HTML/CSS/JS files
-- The frontend uses `localStorage` to store the auth token — your login endpoint **must** return a `token` field
-- All date fields should follow **ISO 8601** format: `YYYY-MM-DD` or `YYYY-MM-DDTHH:mm:ssZ`
-- Enable **CORS** on your backend — the frontend runs from a different origin
-- File uploads use `multipart/form-data` — handle accordingly
+| What is checked                        | Weight |
+|----------------------------------------|--------|
+| All 12 features working correctly      | 40%    |
+| API response fields match exactly      | 20%    |
+| Login and auth working securely        | 15%    |
+| Proper error messages returned         | 10%    |
+| Clean, readable code                   | 10%    |
+| Bonus: File upload working             | 5%     |
 
 ---
 
