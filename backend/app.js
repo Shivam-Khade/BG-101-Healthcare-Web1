@@ -714,9 +714,23 @@ adminRoute.get('/doctors', async (req, res, next) => {
 adminRoute.post('/doctors', async (req, res, next) => {
   try {
     const doctor = await Doctor.create(req.body);
-    // Link to user if needed
-    await User.create({ name: req.body.name, email: req.body.email, password: await bcrypt.hash('doc1234', 10), role: 'doctor' });
+    // Also create a linked User account for the doctor to login
+    const existingUser = await User.findOne({ where: { email: req.body.email } });
+    if (!existingUser) {
+      await User.create({ name: req.body.name, email: req.body.email, password: await bcrypt.hash('doc1234', 10), role: 'doctor' });
+    }
     res.json({ success: true, data: doctor });
+  } catch(err) { next(err); }
+});
+
+adminRoute.delete('/doctors/:id', async (req, res, next) => {
+  try {
+    const doctor = await Doctor.findByPk(req.params.id);
+    if (!doctor) return res.status(404).json({ success: false, message: 'Doctor not found' });
+    // Also remove linked user account
+    await User.destroy({ where: { email: doctor.email, role: 'doctor' } });
+    await doctor.destroy();
+    res.json({ success: true, message: 'Doctor removed successfully' });
   } catch(err) { next(err); }
 });
 

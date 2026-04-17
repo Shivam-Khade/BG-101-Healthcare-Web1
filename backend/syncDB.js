@@ -21,13 +21,21 @@ async function sync() {
     });
 
     // Create Doctors
-    const doctors = await Doctor.bulkCreate([
+    const doctorsData = [
       { name: 'Dr. Rajesh Kumar', email: 'rajesh@demo.com', specialty: 'Cardiologist', experience: 15, rating: 4.8, reviews: 234, fee: 800, hospital: 'Apollo Hospital', location: 'Mumbai', location_type: 'clinic', availability: 'Mon-Fri, 9AM-5PM', image_url: '/images/doctors/dr-rajesh.jpg' },
       { name: 'Dr. Priya Sharma', email: 'priya@demo.com', specialty: 'Dermatologist', experience: 10, rating: 4.5, reviews: 120, fee: 600, hospital: 'City Care', location: 'Delhi', location_type: 'online', availability: 'Tue-Sat, 10AM-6PM' },
       { name: 'Dr. Amit Patel', email: 'amit@demo.com', specialty: 'Pediatrician', experience: 8, rating: 4.9, reviews: 310, fee: 500, hospital: 'Sunrise Kids', location: 'Ahmedabad', location_type: 'clinic', availability: 'Mon-Wed, 8AM-2PM' },
       { name: 'Dr. Sneha Reddy', email: 'sneha@demo.com', specialty: 'Orthopedic', experience: 12, rating: 4.7, reviews: 150, fee: 900, hospital: 'Bone & Joint Clinic', location: 'Hyderabad', location_type: 'clinic', availability: 'Mon-Fri, 10AM-4PM' },
       { name: 'Dr. Anil Kapoor', email: 'anil@demo.com', specialty: 'General Physician', experience: 20, rating: 4.6, reviews: 500, fee: 400, hospital: 'HealWell Care', location: 'Pune', location_type: 'online', availability: 'Weekends, 9AM-9PM' }
-    ]);
+    ];
+    
+    const doctors = await Doctor.bulkCreate(doctorsData);
+
+    const hashDoc = await bcrypt.hash('doc1234', 10);
+    for (let d of doctorsData) {
+      await User.create({ name: d.name, email: d.email, password: hashDoc, role: 'doctor' });
+    }
+
     
     // Create Medicines
     await Medicine.bulkCreate([
