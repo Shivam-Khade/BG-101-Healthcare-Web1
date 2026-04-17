@@ -244,14 +244,16 @@ apiRoute.get('/records', authenticateToken, async (req, res, next) => {
 apiRoute.post('/records', authenticateToken, upload.single('file'), async (req, res, next) => {
   try {
     const { title, type, notes } = req.body;
-    if (!req.file) return res.status(400).json({ success: false, message: 'File is required' });
-    
-    const record = await MedicalRecord.create({
+    const recordData = {
       user_id: req.userId, title, type, notes,
-      file_url: `/uploads/records/${req.file.filename}`,
-      file_name: req.file.filename,
-      file_size: req.file.size
-    });
+      upload_date: req.body.date || new Date()
+    };
+    if (req.file) {
+      recordData.file_url = `/uploads/records/${req.file.filename}`;
+      recordData.file_name = req.file.originalname;
+      recordData.file_size = req.file.size;
+    }
+    const record = await MedicalRecord.create(recordData);
     res.json({ success: true, data: record });
   } catch(err) { next(err); }
 });
@@ -312,7 +314,16 @@ apiRoute.get('/lab-reports/:id', authenticateToken, async (req, res, next) => {
 // --- 6. Pharmacy --- //
 apiRoute.get('/medicines', async (req, res, next) => {
   try {
-    const medicines = await Medicine.findAll();
+    const where = {};
+    if (req.query.search) {
+      where[Op.or] = [
+        { name: { [Op.like]: `%${req.query.search}%` } },
+        { category: { [Op.like]: `%${req.query.search}%` } },
+        { description: { [Op.like]: `%${req.query.search}%` } }
+      ];
+    }
+    if (req.query.category) where.category = req.query.category;
+    const medicines = await Medicine.findAll({ where });
     res.json({ success: true, data: medicines });
   } catch(err) { next(err); }
 });
@@ -424,6 +435,13 @@ apiRoute.put('/notifications/read-all', authenticateToken, async (req, res, next
   } catch(err) { next(err); }
 });
 
+apiRoute.delete('/notifications/:id', authenticateToken, async (req, res, next) => {
+  try {
+    await Notification.destroy({ where: { id: req.params.id, user_id: req.userId } });
+    res.json({ success: true, message: 'Notification deleted' });
+  } catch(err) { next(err); }
+});
+
 // --- 10. Emergency --- //
 apiRoute.get('/emergency/contacts', authenticateToken, async (req, res, next) => {
   try {
@@ -438,6 +456,13 @@ apiRoute.post('/emergency/contacts', authenticateToken, async (req, res, next) =
     if (is_primary) await EmergencyContact.update({ is_primary: false }, { where: { user_id: req.userId } });
     const contact = await EmergencyContact.create({ user_id: req.userId, name, relation, phone, is_primary });
     res.json({ success: true, data: contact });
+  } catch(err) { next(err); }
+});
+
+apiRoute.delete('/emergency/contacts/:id', authenticateToken, async (req, res, next) => {
+  try {
+    await EmergencyContact.destroy({ where: { id: req.params.id, user_id: req.userId } });
+    res.json({ success: true, message: 'Contact deleted' });
   } catch(err) { next(err); }
 });
 

@@ -55,7 +55,6 @@
           <option>Surgery Report</option>
           <option>Other</option>
         </select>
-        <button class="btn btn-secondary" onclick="loadRecords()">Filter</button>
       </div>
 
       <!-- Records Table -->
@@ -162,8 +161,8 @@
         <tr>
           <td><div class="fw-600">📄 ${r.title}</div></td>
           <td><span class="pill">${r.type}</span></td>
-          <td>${fmtDate(r.upload_date || r.date)}</td>
-          <td>${r.notes || '—'}</td>
+          <td>${fmtDate(r.upload_date || r.createdAt)}</td>
+          <td>${r.file_name || '—'}</td>
           <td><span class="text-muted text-sm">${r.notes || '—'}</span></td>
           <td>
             <div style="display:flex;gap:6px;">

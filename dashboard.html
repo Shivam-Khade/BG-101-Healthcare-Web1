@@ -187,7 +187,7 @@
 <script>
   function logout() { auth.clear(); window.location.href = 'index.html'; }
 
-  // GET /api/dashboard/stats
+  // GET /api/dashboard/stats + /api/profile
   async function loadDashboard() {
     try {
       const resp = await GET('/dashboard/stats');
@@ -197,47 +197,69 @@
       document.getElementById('stat-labs').textContent = data.lab_reports ?? 0;
       document.getElementById('stat-bills').textContent = data.pending_bills ?? 0;
 
-      if (data.health_summary) {
-        const hs = data.health_summary;
-        document.getElementById('bp-val').textContent = hs.blood_pressure || '—';
-        document.getElementById('bs-val').textContent = hs.blood_sugar || '—';
-        document.getElementById('hr-val').textContent = hs.heart_rate || '—';
-        document.getElementById('blood-grp').textContent = hs.blood_group || '—';
-        document.getElementById('weight').textContent = hs.weight || '—';
-        document.getElementById('height').textContent = hs.height || '—';
+      // Health metrics from dashboard
+      if (data.health_metrics) {
+        const hm = data.health_metrics;
+        document.getElementById('bp-val').textContent = hm.blood_pressure || '—';
+        document.getElementById('bs-val').textContent = hm.blood_sugar || '—';
+        document.getElementById('hr-val').textContent = hm.heart_rate || '—';
       }
 
-      if (data.upcoming_appointments?.length) {
-        document.getElementById('upcoming-appts').innerHTML = data.upcoming_appointments.slice(0, 3).map(a => `
-          <div class="appt-card" style="margin-bottom:10px;">
-            <div class="appt-date-block">
-              <div class="appt-day">${new Date(a.date).getDate()}</div>
-              <div class="appt-month">${new Date(a.date).toLocaleString('default',{month:'short'})}</div>
-            </div>
-            <div class="appt-info">
-              <div class="appt-doctor">${a.doctor_name}</div>
-              <div class="appt-spec">${a.specialty}</div>
-              <div class="appt-meta"><span>🕐 ${a.time}</span><span>📍 ${a.type}</span></div>
-            </div>
-            <span class="badge badge-primary">${a.status}</span>
-          </div>`).join('');
+      // Upcoming appointments from recent_appointments
+      if (data.recent_appointments?.length) {
+        const apptResp = await GET('/appointments?status=upcoming');
+        const appts = apptResp.data || [];
+        if (appts.length) {
+          document.getElementById('upcoming-appts').innerHTML = appts.slice(0, 3).map(a => `
+            <div class="appt-card" style="margin-bottom:10px;">
+              <div class="appt-date-block">
+                <div class="appt-day">${new Date(a.date).getDate()}</div>
+                <div class="appt-month">${new Date(a.date).toLocaleString('default',{month:'short'})}</div>
+              </div>
+              <div class="appt-info">
+                <div class="appt-doctor">${a.Doctor ? a.Doctor.name : (a.doctor_name || 'Doctor')}</div>
+                <div class="appt-spec">${a.Doctor ? a.Doctor.specialty : (a.specialty || '')}</div>
+                <div class="appt-meta"><span>🕐 ${a.time}</span><span>📍 ${a.type}</span></div>
+              </div>
+              <span class="badge badge-primary">${a.status}</span>
+            </div>`).join('');
+        }
       }
 
-      if (data.active_prescriptions?.length) {
-        document.getElementById('active-rx').innerHTML = data.active_prescriptions.slice(0, 3).map(rx => `
-          <div class="rx-card" style="padding:14px;margin-bottom:10px;">
-            <div class="fw-700">${rx.medicines?.[0]?.name || 'Prescription'}</div>
-            <div class="text-sm text-muted">Dr. ${rx.doctor_name} · ${fmtDate(rx.date)}</div>
-          </div>`).join('');
-      }
+      // Active prescriptions
+      try {
+        const rxResp = await GET('/prescriptions?status=active');
+        const rxList = rxResp.data || [];
+        if (rxList.length) {
+          document.getElementById('active-rx').innerHTML = rxList.slice(0, 3).map(rx => `
+            <div class="rx-card" style="padding:14px;margin-bottom:10px;">
+              <div class="fw-700">${rx.medicines?.[0]?.name || 'Prescription'}</div>
+              <div class="text-sm text-muted">Dr. ${rx.Doctor ? rx.Doctor.name : (rx.doctor_name||'')} · ${fmtDate(rx.issued_date || rx.date)}</div>
+            </div>`).join('');
+        }
+      } catch(e) {}
 
-      if (data.recent_labs?.length) {
-        document.getElementById('recent-labs').innerHTML = data.recent_labs.slice(0, 3).map(l => `
-          <div class="flex justify-between items-center" style="padding:10px 0;border-bottom:1px solid var(--border);">
-            <div><div class="fw-600">${l.test_name}</div><div class="text-xs text-muted">${fmtDate(l.date)}</div></div>
-            <span class="badge ${l.status === 'Normal' ? 'badge-success' : 'badge-danger'}">${l.status}</span>
-          </div>`).join('');
-      }
+      // Recent lab reports
+      try {
+        const labResp = await GET('/lab-reports');
+        const labs = labResp.data || [];
+        if (labs.length) {
+          document.getElementById('recent-labs').innerHTML = labs.slice(0, 3).map(l => `
+            <div class="flex justify-between items-center" style="padding:10px 0;border-bottom:1px solid var(--border);">
+              <div><div class="fw-600">${l.test_name}</div><div class="text-xs text-muted">${fmtDate(l.test_date)}</div></div>
+              <span class="badge ${l.status === 'completed' ? 'badge-success' : 'badge-warning'}">${l.status}</span>
+            </div>`).join('');
+        }
+      } catch(e) {}
+
+      // Profile data for health summary card
+      try {
+        const profResp = await GET('/profile');
+        const p = profResp.data || profResp;
+        document.getElementById('blood-grp').textContent = p.blood_group || '—';
+        document.getElementById('weight').textContent = p.weight ? p.weight + ' kg' : '—';
+        document.getElementById('height').textContent = p.height ? p.height + ' cm' : '—';
+      } catch(e) {}
 
     } catch (err) {
       console.error('Dashboard load failed:', err.message);

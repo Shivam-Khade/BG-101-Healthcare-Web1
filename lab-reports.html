@@ -48,9 +48,8 @@
           <option value="pending">Pending</option>
           <option value="ready">Ready</option>
         </select>
-        <input type="date" class="form-control" id="fromDate" style="width:auto;" />
-        <input type="date" class="form-control" id="toDate" style="width:auto;" />
-        <button class="btn btn-secondary" onclick="loadReports()">Filter</button>
+        <input type="date" class="form-control" id="fromDate" style="width:auto;" onchange="loadReports()" />
+        <input type="date" class="form-control" id="toDate" style="width:auto;" onchange="loadReports()" />
       </div>
 
       <!-- Reports List -->

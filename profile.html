@@ -185,7 +185,7 @@
       document.getElementById('h-height').textContent = p.height ? `${p.height} cm` : '—';
       document.getElementById('h-weight').textContent = p.weight ? `${p.weight} kg` : '—';
       document.getElementById('h-allergies').textContent = p.allergies || 'None';
-      document.getElementById('h-conditions').textContent = p.conditions || 'None';
+      document.getElementById('h-conditions').textContent = p.chronic_conditions || 'None';
 
       // prefill edit forms
       document.getElementById('edit-name').value = p.name || '';
@@ -197,7 +197,7 @@
       document.getElementById('edit-height').value = p.height || '';
       document.getElementById('edit-weight').value = p.weight || '';
       document.getElementById('edit-allergies').value = p.allergies || '';
-      document.getElementById('edit-conditions').value = p.conditions || '';
+      document.getElementById('edit-conditions').value = p.chronic_conditions || '';
     } catch (err) { console.error('Profile load failed:', err.message); }
   }
 
@@ -226,7 +226,7 @@
       weight: document.getElementById('edit-weight').value,
       blood_pressure: document.getElementById('edit-bp').value,
       allergies: document.getElementById('edit-allergies').value,
-      conditions: document.getElementById('edit-conditions').value
+      chronic_conditions: document.getElementById('edit-conditions').value
     };
     try {
       await PUT('/profile', payload);
