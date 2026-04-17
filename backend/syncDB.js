@@ -7,11 +7,17 @@ async function sync() {
 
     const { User, Doctor, Medicine, Appointment, Prescription, LabReport, Bill, Notification } = require('./models');
     
-    // Create Demo Patient
+    // Create Demo Patient and Admin
     const bcrypt = require('bcrypt');
-    const hash = await bcrypt.hash('demo123', 10);
+    const hashPatient = await bcrypt.hash('demo123', 10);
+    const hashAdmin = await bcrypt.hash('admin@123', 10);
+
     const demoPatient = await User.create({
-      name: 'Demo Patient', email: 'patient@demo.com', password: hash, phone: '+91 9876543210', dob: '1990-05-15', gender: 'Male', blood_group: 'A+'
+      name: 'Demo Patient', email: 'patient@demo.com', password: hashPatient, role: 'patient', phone: '+91 9876543210', dob: '1990-05-15', gender: 'Male', blood_group: 'A+'
+    });
+
+    const demoAdmin = await User.create({
+      name: 'System Admin', email: 'admin@gmail.com', password: hashAdmin, role: 'admin'
     });
 
     // Create Doctors
