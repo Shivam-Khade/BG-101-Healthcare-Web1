@@ -164,7 +164,8 @@
   // GET /api/profile
   async function loadProfile() {
     try {
-      const p = await GET('/profile');
+      const resp = await GET('/profile');
+      const p = resp.data || resp;
       document.getElementById('profile-full-name').textContent = p.name;
       document.getElementById('profile-email').textContent = p.email;
       document.getElementById('profile-blood').textContent = `🩸 Blood: ${p.blood_group || '—'}`;

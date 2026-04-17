@@ -160,14 +160,7 @@
     const password = document.getElementById('login-pass').value;
     const btn = e.target.querySelector('button[type=submit]');
 
-    // ── DEMO BYPASS (no backend required) ──
-    if (email === DEMO_EMAIL && password === DEMO_PASS) {
-      auth.setToken('demo-token');
-      auth.setUser(DEMO_USER);
-      toast('Demo login successful!', 'success');
-      setTimeout(() => window.location.href = 'dashboard.html', 700);
-      return;
-    }
+    // Removed demo bypass so it hits the live server with real credentials
 
     btn.textContent = 'Signing in…'; btn.disabled = true;
     try {

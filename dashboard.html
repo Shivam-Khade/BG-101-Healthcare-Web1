@@ -187,14 +187,15 @@
 <script>
   function logout() { auth.clear(); window.location.href = 'index.html'; }
 
-  // GET /api/dashboard  →  { stats, upcoming_appointments, active_prescriptions, recent_labs, health_summary }
+  // GET /api/dashboard/stats
   async function loadDashboard() {
     try {
-      const data = await GET('/dashboard');
-      document.getElementById('stat-appts').textContent = data.stats.upcoming_appointments ?? 0;
-      document.getElementById('stat-rx').textContent = data.stats.active_prescriptions ?? 0;
-      document.getElementById('stat-labs').textContent = data.stats.lab_reports ?? 0;
-      document.getElementById('stat-bills').textContent = data.stats.pending_bills ?? 0;
+      const resp = await GET('/dashboard/stats');
+      const data = resp.data || resp;
+      document.getElementById('stat-appts').textContent = data.upcoming_appointments ?? 0;
+      document.getElementById('stat-rx').textContent = data.active_prescriptions ?? 0;
+      document.getElementById('stat-labs').textContent = data.lab_reports ?? 0;
+      document.getElementById('stat-bills').textContent = data.pending_bills ?? 0;
 
       if (data.health_summary) {
         const hs = data.health_summary;

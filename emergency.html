@@ -213,8 +213,8 @@
     }
 
     try {
-      const data = await GET(`/emergency/hospitals?lat=${lat}&lng=${lng}&radius=5`);
-      const hospitals = Array.isArray(data) ? data : data.hospitals || [];
+      const resp = await GET(`/emergency/hospitals?lat=${lat}&lng=${lng}&radius=5`);
+      const hospitals = resp.data || resp.hospitals || [];
       listEl.innerHTML = hospitals.length
         ? hospitals.map(h => `
           <div class="hospital-card">
@@ -236,8 +236,8 @@
   // GET /api/emergency/contacts
   async function loadContacts() {
     try {
-      const data = await GET('/emergency/contacts');
-      const contacts = Array.isArray(data) ? data : data.contacts || [];
+      const resp = await GET('/emergency/contacts');
+      const contacts = resp.data || resp.contacts || [];
       document.getElementById('contacts-list').innerHTML = contacts.length
         ? contacts.map(c => `
           <div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);">
@@ -281,10 +281,11 @@
   // GET /api/profile (for medical summary)
   async function loadMedicalSummary() {
     try {
-      const p = await GET('/profile');
+      const respP = await GET('/profile');
+      const p = respP.data || respP;
       document.getElementById('med-blood').textContent = p.blood_group || '—';
       document.getElementById('med-allergies').textContent = p.allergies || 'None';
-      document.getElementById('med-conditions').textContent = p.conditions || 'None';
+      document.getElementById('med-conditions').textContent = p.chronic_conditions || p.conditions || 'None';
     } catch {}
   }
 

@@ -47,20 +47,19 @@
               <span class="search-icon">🔍</span>
               <input type="text" id="searchInput" placeholder="Search by name or specialty…" />
             </div>
-            <select class="form-control" id="specialtyFilter" style="width:auto;min-width:180px;">
+            <select class="form-control" id="specialtyFilter" style="width:auto;min-width:180px;" onchange="loadDoctors()">
               <option value="">All Specialties</option>
             </select>
-            <select class="form-control" id="locationFilter" style="width:auto;min-width:160px;">
+            <select class="form-control" id="locationFilter" style="width:auto;min-width:160px;" onchange="loadDoctors()">
               <option value="">All Locations</option>
               <option>Online</option><option>In-clinic</option>
             </select>
-            <select class="form-control" id="sortFilter" style="width:auto;min-width:160px;">
+            <select class="form-control" id="sortFilter" style="width:auto;min-width:160px;" onchange="loadDoctors()">
               <option value="rating">Sort: Rating</option>
               <option value="fee_asc">Fee: Low to High</option>
               <option value="fee_desc">Fee: High to Low</option>
               <option value="experience">Experience</option>
             </select>
-            <button class="btn btn-primary" onclick="loadDoctors()">Search</button>
           </div>
         </div>
       </div>
@@ -156,11 +155,13 @@
   // GET /api/doctors/specialties
   async function loadSpecialties() {
     try {
-      const data = await GET('/doctors/specialties');
+      const resp = await GET('/doctors/specialties');
+      const data = resp.data || resp;
       const sel = document.getElementById('specialtyFilter');
       data.forEach(s => {
         const opt = document.createElement('option');
-        opt.value = s.id || s.name; opt.textContent = s.name;
+        const specName = typeof s === 'string' ? s : s.name;
+        opt.value = specName; opt.textContent = specName;
         sel.appendChild(opt);
       });
     } catch (e) {}
@@ -177,8 +178,8 @@
 
     try {
       const params = new URLSearchParams({ search, specialty, location, sort }).toString();
-      const data = await GET(`/doctors?${params}`);
-      const doctors = Array.isArray(data) ? data : data.doctors || [];
+      const resp = await GET(`/doctors?${params}`);
+      const doctors = resp.data || resp.doctors || [];
       document.getElementById('result-count').textContent = doctors.length;
 
       if (!doctors.length) {
@@ -228,15 +229,43 @@
     if (e.target.id === 'book-date' && currentDoctor) {
       const date = e.target.value;
       const timeEl = document.getElementById('book-time');
+      
+      const todayDate = new Date().toISOString().split('T')[0];
+      if (date < todayDate) {
+        toast('Cannot book in the past!', 'error');
+        e.target.value = todayDate;
+        return;
+      }
+      
       timeEl.innerHTML = '<option>Loading slots…</option>';
       try {
-        const data = await GET(`/doctors/${currentDoctor.id}/slots?date=${date}`);
-        const slots = Array.isArray(data) ? data : data.slots || [];
+        const resp = await GET(`/doctors/${currentDoctor.id}/slots?date=${date}`);
+        let slots = Array.isArray(resp.data) ? resp.data : (resp.data?.slots || resp.slots || []);
+        
+        // Filter out past time slots if booking for today
+        if (date === todayDate) {
+          const now = new Date();
+          slots = slots.map(s => {
+            if (!s.time) return s;
+            const [timeStr, modifier] = s.time.split(' ');
+            let [hours, minutes] = timeStr.split(':');
+            hours = parseInt(hours, 10);
+            if (hours === 12) hours = 0;
+            if (modifier === 'PM') hours += 12;
+            
+            const slotTime = new Date();
+            slotTime.setHours(hours, parseInt(minutes, 10), 0);
+            
+            if (slotTime <= now) s.available = false;
+            return s;
+          });
+        }
+        
         timeEl.innerHTML = slots.length
-          ? slots.map(s => `<option value="${s.time}">${s.time} ${s.available ? '' : '(Full)'}</option>`).join('')
-          : '<option>No slots available</option>';
+          ? '<option value="" disabled selected>Select an open slot</option>' + slots.map(s => `<option value="${s.time}" ${!s.available ? 'disabled' : ''}>${s.time} ${s.available ? '' : '(Passed/Full)'}</option>`).join('')
+          : '<option value="">No slots available</option>';
       } catch {
-        timeEl.innerHTML = '<option>09:00 AM</option><option>10:00 AM</option><option>11:00 AM</option><option>02:00 PM</option><option>03:00 PM</option>';
+        timeEl.innerHTML = '<option value="">Failed to load slots</option>';
       }
     }
   });
@@ -263,7 +292,8 @@
     openModal('doctorModal');
     document.getElementById('doctorDetailBody').textContent = 'Loading…';
     try {
-      const d = await GET(`/doctors/${id}`);
+      const resp = await GET(`/doctors/${id}`);
+      const d = resp.data || resp;
       document.getElementById('doctorDetailBody').innerHTML = `
         <div style="display:flex;gap:20px;align-items:flex-start;margin-bottom:20px;">
           <div class="dc-avatar" style="width:80px;height:80px;font-size:36px;flex-shrink:0;">👨‍⚕️</div>
@@ -289,7 +319,11 @@
   loadSpecialties();
   loadDoctors();
 
-  document.getElementById('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') loadDoctors(); });
+  let searchTimeout;
+  document.getElementById('searchInput').addEventListener('input', e => { 
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(loadDoctors, 300); 
+  });
 </script>
 </body>
 </html>

@@ -88,8 +88,8 @@
     }).toString();
     document.getElementById('reports-container').innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><h3>Loading…</h3></div>';
     try {
-      const data = await GET(`/lab-reports?${params}`);
-      const reports = Array.isArray(data) ? data : data.reports || [];
+      const resp = await GET(`/lab-reports?${params}`);
+      const reports = resp.data || resp.reports || [];
       if (!reports.length) {
         document.getElementById('reports-container').innerHTML = '<div class="empty-state"><div class="empty-icon">🔬</div><h3>No lab reports found</h3><p>Your test results will appear here once ready</p></div>';
         return;
@@ -99,7 +99,7 @@
           <div class="card-header">
             <div>
               <span class="card-title">🔬 ${r.test_name}</span>
-              <div class="text-muted text-xs" style="margin-top:2px;">Ordered by Dr. ${r.doctor_name} · ${fmtDate(r.date)}</div>
+              <div class="text-muted text-xs" style="margin-top:2px;">Ordered by Dr. ${r.Doctor ? r.Doctor.name : (r.doctor_name||'—')} · ${fmtDate(r.test_date || r.date)}</div>
             </div>
             <div style="display:flex;align-items:center;gap:10px;">
               <span class="badge ${r.status === 'ready' ? 'badge-success' : 'badge-warning'}">${r.status === 'ready' ? 'Results Ready' : 'Pending'}</span>
@@ -131,7 +131,8 @@
   async function viewReport(id) {
     openModal('reportModal');
     try {
-      const r = await GET(`/lab-reports/${id}`);
+      const respR = await GET(`/lab-reports/${id}`);
+      const r = respR.data || respR;
       document.getElementById('reportModalBody').innerHTML = `
         <div style="background:var(--bg);border-radius:10px;padding:16px;margin-bottom:20px;">
           <div class="flex justify-between items-center mb-2">
@@ -139,8 +140,8 @@
             <span class="badge badge-success">Results Ready</span>
           </div>
           <div class="form-row">
-            <div><div class="text-xs text-muted">Ordered by</div><div class="fw-600">Dr. ${r.doctor_name}</div></div>
-            <div><div class="text-xs text-muted">Test Date</div><div class="fw-600">${fmtDate(r.date)}</div></div>
+            <div><div class="text-xs text-muted">Ordered by</div><div class="fw-600">Dr. ${r.Doctor ? r.Doctor.name : (r.doctor_name||'—')}</div></div>
+            <div><div class="text-xs text-muted">Test Date</div><div class="fw-600">${fmtDate(r.test_date || r.date)}</div></div>
             <div><div class="text-xs text-muted">Lab Name</div><div class="fw-600">${r.lab_name || '—'}</div></div>
             <div><div class="text-xs text-muted">Sample Type</div><div class="fw-600">${r.sample_type || '—'}</div></div>
           </div>

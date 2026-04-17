@@ -90,11 +90,11 @@
     <div class="modal-header"><span class="modal-title">Reschedule Appointment</span><button class="modal-close" onclick="closeModal('rescheduleModal')">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="rs-appt-id" />
+      <input type="hidden" id="rs-doctor-id" />
       <div class="form-group"><label class="form-label">New Date</label><input type="date" class="form-control" id="rs-date" /></div>
       <div class="form-group"><label class="form-label">New Time Slot</label>
-        <select class="form-control" id="rs-time">
-          <option>09:00 AM</option><option>10:00 AM</option><option>11:00 AM</option>
-          <option>02:00 PM</option><option>03:00 PM</option><option>04:00 PM</option>
+        <select class="form-control" id="rs-time" required>
+          <option value="">Select date first</option>
         </select>
       </div>
       <div class="form-group"><label class="form-label">Reason for Reschedule</label><textarea class="form-control" id="rs-reason" placeholder="Optional reason…"></textarea></div>
@@ -135,8 +135,8 @@
   // GET /api/appointments?status=upcoming
   async function loadUpcoming() {
     try {
-      const data = await GET('/appointments?status=upcoming');
-      const appts = Array.isArray(data) ? data : data.appointments || [];
+      const resp = await GET('/appointments?status=upcoming');
+      const appts = resp.data || resp.appointments || [];
       if (!appts.length) return;
       document.getElementById('upcoming-list').innerHTML = appts.map(a => `
         <div class="appt-card">
@@ -145,8 +145,8 @@
             <div class="appt-month">${new Date(a.date).toLocaleString('default',{month:'short'})}</div>
           </div>
           <div class="appt-info">
-            <div class="appt-doctor">${a.doctor_name}</div>
-            <div class="appt-spec">${a.specialty}</div>
+            <div class="appt-doctor">${a.Doctor ? (a.Doctor.name || '') : (a.doctor_name || 'Dr.')}</div>
+            <div class="appt-spec">${a.Doctor ? (a.Doctor.specialty || '') : (a.specialty || '')}</div>
             <div class="appt-meta">
               <span>🕐 ${a.time}</span>
               <span>📍 ${a.type}</span>
@@ -155,7 +155,7 @@
           </div>
           <div class="appt-actions">
             <span class="badge badge-primary" style="margin-right:8px;">${a.status}</span>
-            <button class="btn btn-secondary btn-sm" onclick="openReschedule(${a.id})">Reschedule</button>
+            <button class="btn btn-secondary btn-sm" onclick="openReschedule(${a.id}, ${a.doctor_id || (a.Doctor && a.Doctor.id) || null})">Reschedule</button>
             <button class="btn btn-danger btn-sm" onclick="openCancel(${a.id})">Cancel</button>
           </div>
         </div>`).join('');
@@ -165,13 +165,13 @@
   // GET /api/appointments?status=past
   async function loadPast() {
     try {
-      const data = await GET('/appointments?status=past');
-      const appts = Array.isArray(data) ? data : data.appointments || [];
+      const resp = await GET('/appointments?status=past');
+      const appts = resp.data || resp.appointments || [];
       if (!appts.length) return;
       document.getElementById('past-tbody').innerHTML = appts.map(a => `
         <tr>
-          <td><div class="fw-600">${a.doctor_name}</div></td>
-          <td>${a.specialty}</td>
+          <td><div class="fw-600">${a.Doctor ? (a.Doctor.name || '') : (a.doctor_name || 'Dr.')}</div></td>
+          <td>${a.Doctor ? (a.Doctor.specialty || '') : (a.specialty || '')}</td>
           <td>${fmtDate(a.date)} · ${a.time}</td>
           <td><span class="pill">${a.type}</span></td>
           <td><span class="badge badge-success">Completed</span></td>
@@ -183,12 +183,12 @@
   // GET /api/appointments?status=cancelled
   async function loadCancelled() {
     try {
-      const data = await GET('/appointments?status=cancelled');
-      const appts = Array.isArray(data) ? data : data.appointments || [];
+      const resp = await GET('/appointments?status=cancelled');
+      const appts = resp.data || resp.appointments || [];
       if (!appts.length) return;
       document.getElementById('cancelled-tbody').innerHTML = appts.map(a => `
         <tr>
-          <td><div class="fw-600">${a.doctor_name}</div></td>
+          <td><div class="fw-600">${a.Doctor ? (a.Doctor.name || '') : (a.doctor_name || 'Dr.')}</div></td>
           <td>${fmtDate(a.date)} · ${a.time}</td>
           <td>${a.cancel_reason || '—'}</td>
           <td>${fmtDate(a.cancelled_at)}</td>
@@ -196,11 +196,63 @@
     } catch (err) {}
   }
 
-  function openReschedule(id) {
+  function openReschedule(id, doctorId) {
     document.getElementById('rs-appt-id').value = id;
-    document.getElementById('rs-date').min = new Date().toISOString().split('T')[0];
+    document.getElementById('rs-doctor-id').value = doctorId;
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('rs-date');
+    dateInput.min = today;
+    dateInput.value = ''; // Reset
+    document.getElementById('rs-time').innerHTML = '<option value="">Select date first</option>';
     openModal('rescheduleModal');
   }
+
+  // Load dynamic slots when date changes for rescheduling
+  document.getElementById('rs-date').addEventListener('change', async (e) => {
+    const date = e.target.value;
+    const doctorId = document.getElementById('rs-doctor-id').value;
+    const timeEl = document.getElementById('rs-time');
+    
+    // Prevent past dates from being typed directly 
+    const today = new Date().toISOString().split('T')[0];
+    if (date < today) {
+      toast('Cannot select a past date!', 'error');
+      e.target.value = today;
+      return;
+    }
+
+    if (!doctorId || !date) return;
+    
+    timeEl.innerHTML = '<option>Loading slots…</option>';
+    try {
+      const resp = await GET(`/doctors/${doctorId}/slots?date=${date}`);
+      let slots = Array.isArray(resp.data) ? resp.data : (resp.data?.slots || resp.slots || []);
+      
+      if (date === today) {
+        const now = new Date();
+        slots = slots.map(s => {
+          if (!s.time) return s;
+          const [timeStr, modifier] = s.time.split(' ');
+          let [hours, minutes] = timeStr.split(':');
+          hours = parseInt(hours, 10);
+          if (hours === 12) hours = 0;
+          if (modifier === 'PM') hours += 12;
+          
+          const slotTime = new Date();
+          slotTime.setHours(hours, parseInt(minutes, 10), 0);
+          
+          if (slotTime <= now) s.available = false;
+          return s;
+        });
+      }
+      
+      timeEl.innerHTML = slots.length
+        ? '<option value="" disabled selected>Select an open slot</option>' + slots.map(s => `<option value="${s.time}" ${!s.available ? 'disabled' : ''}>${s.time} ${s.available ? '' : '(Passed/Full)'}</option>`).join('')
+        : '<option value="">No slots available</option>';
+    } catch {
+      timeEl.innerHTML = '<option value="">Failed to load slots</option>';
+    }
+  });
 
   // PUT /api/appointments/:id
   async function submitReschedule() {

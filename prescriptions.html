@@ -83,8 +83,8 @@
       <div class="rx-card" id="rx-${rx.id}">
         <div class="rx-header">
           <div>
-            <div class="rx-doctor">Dr. ${rx.doctor_name}</div>
-            <div class="rx-date">${rx.specialty} · ${fmtDate(rx.date)}</div>
+            <div class="rx-doctor">Dr. ${rx.Doctor ? rx.Doctor.name : (rx.doctor_name || '—')}</div>
+            <div class="rx-date">${rx.Doctor ? rx.Doctor.specialty : (rx.specialty || '')} · ${fmtDate(rx.issued_date || rx.date)}</div>
             <div style="margin-top:6px;"><span class="badge ${rx.status === 'active' ? 'badge-success' : 'badge-secondary'}">${rx.status}</span></div>
           </div>
           <button class="btn btn-outline btn-sm" onclick="viewRx(${rx.id})">View Details</button>
@@ -107,8 +107,8 @@
   // GET /api/prescriptions?status=active
   async function loadActive() {
     try {
-      const data = await GET('/prescriptions?status=active');
-      const list = Array.isArray(data) ? data : data.prescriptions || [];
+      const resp = await GET('/prescriptions?status=active');
+      const list = resp.data || resp.prescriptions || [];
       document.getElementById('active-rx-list').innerHTML = list.length
         ? list.map(rx => renderRxCard(rx)).join('')
         : '<div class="empty-state"><div class="empty-icon">💊</div><h3>No active prescriptions</h3></div>';
@@ -118,8 +118,8 @@
   // GET /api/prescriptions?status=expired
   async function loadPast() {
     try {
-      const data = await GET('/prescriptions?status=expired');
-      const list = Array.isArray(data) ? data : data.prescriptions || [];
+      const resp = await GET('/prescriptions?status=expired');
+      const list = resp.data || resp.prescriptions || [];
       document.getElementById('past-rx-list').innerHTML = list.length
         ? list.map(rx => renderRxCard(rx)).join('')
         : '<div class="empty-state"><div class="empty-icon">📋</div><h3>No past prescriptions</h3></div>';
@@ -130,7 +130,8 @@
   async function viewRx(id) {
     openModal('rxModal');
     try {
-      const rx = await GET(`/prescriptions/${id}`);
+      const respRx = await GET(`/prescriptions/${id}`);
+      const rx = respRx.data || respRx;
       currentRx = rx;
       document.getElementById('rxModalBody').innerHTML = `
         <div style="background:var(--bg);border-radius:10px;padding:16px;margin-bottom:20px;">
@@ -139,9 +140,9 @@
             <span class="badge ${rx.status === 'active' ? 'badge-success' : 'badge-secondary'}">${rx.status}</span>
           </div>
           <div class="form-row">
-            <div><span class="text-muted text-xs">Doctor</span><div class="fw-600">Dr. ${rx.doctor_name}</div></div>
-            <div><span class="text-muted text-xs">Date</span><div class="fw-600">${fmtDate(rx.date)}</div></div>
-            <div><span class="text-muted text-xs">Valid Until</span><div class="fw-600">${fmtDate(rx.valid_until)}</div></div>
+            <div><span class="text-muted text-xs">Doctor</span><div class="fw-600">Dr. ${rx.Doctor ? rx.Doctor.name : (rx.doctor_name || '—')}</div></div>
+            <div><span class="text-muted text-xs">Date</span><div class="fw-600">${fmtDate(rx.issued_date || rx.date)}</div></div>
+            <div><span class="text-muted text-xs">Valid Until</span><div class="fw-600">${fmtDate(rx.valid_till || rx.valid_until)}</div></div>
             <div><span class="text-muted text-xs">Diagnosis</span><div class="fw-600">${rx.diagnosis || '—'}</div></div>
           </div>
         </div>

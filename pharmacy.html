@@ -166,8 +166,8 @@
     document.getElementById('medicines-grid').innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">⏳</div><h3>Loading…</h3></div>';
     try {
       const params = new URLSearchParams({ search, category }).toString();
-      const data = await GET(`/medicines?${params}`);
-      const meds = Array.isArray(data) ? data : data.medicines || [];
+      const resp = await GET(`/medicines?${params}`);
+      const meds = resp.data || resp.medicines || [];
       if (!meds.length) {
         document.getElementById('medicines-grid').innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">🔍</div><h3>No medicines found</h3></div>';
         return;
@@ -178,9 +178,9 @@
           <div class="med-name">${m.name}</div>
           <div class="med-generic">${m.generic_name || ''} · ${m.dosage_form || ''}</div>
           <div class="med-price">₹${m.price}</div>
-          <div class="med-stock ${m.in_stock ? 'text-success' : 'text-danger'}">${m.in_stock ? '✅ In Stock' : '❌ Out of Stock'}</div>
+          <div class="med-stock ${(m.stock > 0) ? 'text-success' : 'text-danger'}">${(m.stock > 0) ? '✅ In Stock' : '❌ Out of Stock'}</div>
           <div style="margin-top:12px;">
-            <button class="btn btn-primary w-full" onclick='addToCart(${JSON.stringify(m).replace(/"/g,"&quot;")})' ${!m.in_stock ? 'disabled' : ''}>
+            <button class="btn btn-primary w-full" onclick='addToCart(${JSON.stringify(m).replace(/"/g,"&quot;")})' ${m.stock <= 0 ? 'disabled' : ''}>
               Add to Cart
             </button>
           </div>
@@ -205,7 +205,7 @@
       closeModal('cartModal');
       cart = [];
       updateCartUI();
-      toast(`Order #${data.order_id} placed successfully!`, 'success');
+      toast(`Order placed successfully!`, 'success');
       loadOrders();
     } catch (err) { toast(err.message || 'Order failed', 'error'); }
   }
@@ -213,16 +213,16 @@
   // GET /api/orders
   async function loadOrders() {
     try {
-      const data = await GET('/orders');
-      const orders = Array.isArray(data) ? data : data.orders || [];
+      const resp = await GET('/orders');
+      const orders = resp.data || resp.orders || [];
       if (!orders.length) return;
       document.getElementById('orders-tbody').innerHTML = orders.map(o => `
         <tr>
           <td class="fw-600">#${o.id}</td>
-          <td>${o.item_count} item(s)</td>
-          <td class="fw-700 text-primary">₹${o.total}</td>
-          <td><span class="badge ${o.status === 'delivered' ? 'badge-success' : o.status === 'cancelled' ? 'badge-danger' : 'badge-warning'}">${o.status}</span></td>
-          <td>${fmtDate(o.created_at)}</td>
+          <td>${Array.isArray(o.items) ? o.items.length : '—'} item(s)</td>
+          <td class="fw-700 text-primary">₹${o.total_amount || o.total || '—'}</td>
+          <td><span class="badge ${o.delivery_status === 'delivered' ? 'badge-success' : o.delivery_status === 'cancelled' ? 'badge-danger' : 'badge-warning'}">${o.delivery_status || o.status || 'processing'}</span></td>
+          <td>${fmtDate(o.order_date || o.created_at)}</td>
           <td><button class="btn btn-secondary btn-sm" onclick="viewOrder(${o.id})">Details</button></td>
         </tr>`).join('');
     } catch (err) {}
@@ -230,7 +230,7 @@
 
   loadMedicines();
   loadOrders();
-  document.getElementById('medSearch').addEventListener('keydown', e => { if (e.key === 'Enter') loadMedicines(); });
+  let medTimeout; document.getElementById('medSearch').addEventListener('input', () => { clearTimeout(medTimeout); medTimeout = setTimeout(loadMedicines, 300); });
 </script>
 </body>
 </html>

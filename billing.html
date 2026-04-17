@@ -134,14 +134,14 @@
     const status = document.getElementById('statusFilter').value;
     const search = document.getElementById('searchInput').value;
     try {
-      const data = await GET(`/bills?status=${status}&search=${search}`);
-      const bills = Array.isArray(data) ? data : data.bills || [];
+      const resp = await GET(`/bills?status=${status}&search=${search}`);
+      const bills = resp.data || resp.bills || [];
 
       // update stats
-      const pending = bills.filter(b => b.status === 'pending').reduce((s, b) => s + b.amount, 0);
-      const paid = bills.filter(b => b.status === 'paid').reduce((s, b) => s + b.amount, 0);
-      document.getElementById('stat-pending').textContent = `₹${pending}`;
-      document.getElementById('stat-paid').textContent = `₹${paid}`;
+      const pending = bills.filter(b => b.status === 'pending').reduce((s, b) => s + Number(b.total || 0), 0);
+      const paid = bills.filter(b => b.status === 'paid').reduce((s, b) => s + Number(b.total || 0), 0);
+      document.getElementById('stat-pending').textContent = `₹${pending.toFixed(2)}`;
+      document.getElementById('stat-paid').textContent = `₹${paid.toFixed(2)}`;
       document.getElementById('stat-invoices').textContent = bills.length;
 
       if (!bills.length) {
@@ -150,16 +150,16 @@
       }
       document.getElementById('bills-tbody').innerHTML = bills.map(b => `
         <tr>
-          <td class="fw-700">#${b.invoice_no || b.id}</td>
-          <td>${b.description}</td>
-          <td>Dr. ${b.doctor_name || '—'}</td>
-          <td>${fmtDate(b.date)}</td>
-          <td class="fw-700">₹${b.amount}</td>
+          <td class="fw-700">${b.invoice_number || ('#'+b.id)}</td>
+          <td>${Array.isArray(b.items) ? b.items.map(i=>i.name).join(', ') : (b.description || 'Medical Services')}</td>
+          <td>Dr. ${b.Appointment?.Doctor?.name || '—'}</td>
+          <td>${fmtDate(b.issue_date || b.date)}</td>
+          <td class="fw-700">₹${b.total || '—'}</td>
           <td><span class="badge ${b.status === 'paid' ? 'badge-success' : b.status === 'overdue' ? 'badge-danger' : 'badge-warning'}">${b.status}</span></td>
           <td>
             <div style="display:flex;gap:6px;">
               <button class="btn btn-secondary btn-sm" onclick="viewInvoice(${b.id})">View</button>
-              ${b.status !== 'paid' ? `<button class="btn btn-primary btn-sm" onclick="openPayModal(${b.id}, '${b.invoice_no || b.id}', ${b.amount})">Pay</button>` : ''}
+              ${b.status !== 'paid' ? `<button class="btn btn-primary btn-sm" onclick="openPayModal(${b.id}, '${b.invoice_number||b.id}', '${b.total}')"><button>Pay</button>` : ''}
             </div>
           </td>
         </tr>`).join('');
@@ -170,7 +170,8 @@
   async function viewInvoice(id) {
     openModal('invoiceModal');
     try {
-      const b = await GET(`/bills/${id}`);
+      const respB = await GET(`/bills/${id}`);
+      const b = respB.data || respB;
       currentBill = b;
       document.getElementById('pay-btn').style.display = b.status !== 'paid' ? 'inline-flex' : 'none';
       document.getElementById('invoiceModalBody').innerHTML = `
