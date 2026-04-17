@@ -204,8 +204,9 @@
       closeModal('cartModal');
       cart = [];
       updateCartUI();
-      toast(`Order placed successfully!`, 'success');
+      toast(`Order placed successfully! Redirecting to billing...`, 'success');
       loadOrders();
+      setTimeout(() => window.location.href = 'billing.html', 1500);
     } catch (err) { toast(err.message || 'Order failed', 'error'); }
   }
 

@@ -22,6 +22,9 @@ app.use(cors({ origin: '*', credentials: true }));
 app.use(express.json());
 app.use(morgan('dev'));
 
+// Serve uploaded files (medical records, etc.)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Upload Dir Setup
 const uploadDir = process.env.UPLOAD_DIR || './uploads';
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
@@ -345,6 +348,24 @@ apiRoute.post('/orders', authenticateToken, async (req, res, next) => {
     }
     
     const order = await Order.create({ user_id: req.userId, items: finalItems, total_amount, delivery_address, payment_method });
+    
+    // Auto-create a bill for this pharmacy order
+    const invoiceNum = 'INV-PH-' + Date.now();
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 7); // due in 7 days
+    await Bill.create({
+      user_id: req.userId,
+      invoice_number: invoiceNum,
+      items: finalItems.map(i => ({ name: `${i.name} x${i.qty}`, amount: (i.price * i.qty).toFixed(2) })),
+      subtotal: total_amount,
+      tax: (total_amount * 0.05).toFixed(2),
+      total: (total_amount * 1.05).toFixed(2),
+      status: payment_method === 'cod' ? 'pending' : 'pending',
+      issue_date: new Date(),
+      due_date: dueDate
+    });
+    await Notification.create({ user_id: req.userId, title: 'Order Placed', message: `Order #${order.id} placed for ₹${total_amount.toFixed(2)}. Invoice ${invoiceNum} created.`, type: 'billing' });
+    
     res.json({ success: true, data: order });
   } catch(err) { next(err); }
 });

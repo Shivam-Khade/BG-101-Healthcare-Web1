@@ -219,7 +219,7 @@
         </div>
         <div class="form-group"><div class="fw-700 text-sm mb-1">Notes</div><p class="text-light">${r.notes || 'No notes'}</p></div>
         ${r.file_url ? `<div class="alert alert-info"><span>📎</span> File attached: ${r.file_name || 'document'}</div>` : ''}`;
-      document.getElementById('download-btn').onclick = () => r.file_url ? window.open(r.file_url) : toast('No file attached', 'warning');
+      document.getElementById('download-btn').onclick = () => r.file_url ? window.open('http://localhost:8000' + r.file_url) : toast('No file attached', 'warning');
     } catch (err) {
       document.getElementById('viewModalBody').innerHTML = `<p class="text-danger">Failed to load: ${err.message}</p>`;
     }
