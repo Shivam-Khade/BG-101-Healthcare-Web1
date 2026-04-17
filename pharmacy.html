@@ -33,7 +33,6 @@
       <div class="top-bar-title">Pharmacy</div>
       <div class="top-bar-actions">
         <button class="btn btn-outline btn-sm" onclick="openModal('cartModal')">🛒 Cart <span id="cart-count" class="nav-badge" style="position:static;margin-left:4px;">0</span></button>
-        <button class="btn btn-secondary btn-sm" onclick="window.location.href='#orders-section'">My Orders</button>
       </div>
     </header>
 
@@ -105,14 +104,27 @@
   </div>
 </div>
 
+<!-- Order Detail Modal -->
+<div class="modal-overlay" id="orderModal">
+  <div class="modal modal-lg">
+    <div class="modal-header"><span class="modal-title">📦 Order Details</span><button class="modal-close" onclick="closeModal('orderModal')">✕</button></div>
+    <div class="modal-body" id="orderModalBody">Loading…</div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('orderModal')">Close</button>
+      <button class="btn btn-success" id="simulate-del-btn" style="display:none;" onclick="simulateDelivery()">Simulate Delivery</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <script src="js/app.js"></script>
 <script>
   function logout() { auth.clear(); window.location.href = 'index.html'; }
-
-  let cart = [];
+  // Load cart from localStorage or start empty
+  let cart = JSON.parse(localStorage.getItem('patient_cart') || '[]');
 
   function updateCartUI() {
+    localStorage.setItem('patient_cart', JSON.stringify(cart));
     document.getElementById('cart-count').textContent = cart.reduce((s, i) => s + i.qty, 0);
     if (!cart.length) {
       document.getElementById('cart-items').innerHTML = '<div class="empty-state" style="padding:32px 0;"><div class="empty-icon">🛒</div><h3>Cart is empty</h3></div>';
@@ -214,22 +226,91 @@
   async function loadOrders() {
     try {
       const resp = await GET('/orders');
+      console.log('[Pharmacy] Orders:', resp);
       const orders = resp.data || resp.orders || [];
-      if (!orders.length) return;
-      document.getElementById('orders-tbody').innerHTML = orders.map(o => `
+      const tbody = document.getElementById('orders-tbody');
+      if (!orders.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:36px;color:var(--text-muted);">No orders yet</td></tr>';
+        return;
+      }
+      tbody.innerHTML = orders.map(o => `
         <tr>
           <td class="fw-600">#${o.id}</td>
-          <td>${Array.isArray(o.items) ? o.items.length : '—'} item(s)</td>
-          <td class="fw-700 text-primary">₹${o.total_amount || o.total || '—'}</td>
+          <td>${(Array.isArray(o.items) ? o.items : []).length} item(s)</td>
+          <td class="fw-700 text-primary">₹${(Number(o.total_amount || o.total || 0)).toFixed(2)}</td>
           <td><span class="badge ${o.delivery_status === 'delivered' ? 'badge-success' : o.delivery_status === 'cancelled' ? 'badge-danger' : 'badge-warning'}">${o.delivery_status || o.status || 'processing'}</span></td>
           <td>${fmtDate(o.order_date || o.created_at)}</td>
           <td><button class="btn btn-secondary btn-sm" onclick="viewOrder(${o.id})">Details</button></td>
         </tr>`).join('');
-    } catch (err) {}
+    } catch (err) {
+      console.error('[Pharmacy] Load Orders Error:', err);
+      toast('Failed to load orders: ' + err.message, 'error');
+    }
+  }
+
+  let currentOrder = null;
+  async function viewOrder(id) {
+    openModal('orderModal');
+    document.getElementById('orderModalBody').innerHTML = '<p>Loading order details...</p>';
+    try {
+      const resp = await GET('/orders');
+      const orders = resp.data || resp.orders || [];
+      const o = orders.find(x => x.id === id);
+      if (!o) throw new Error('Order not found');
+      currentOrder = o;
+
+      document.getElementById('simulate-del-btn').style.display = o.delivery_status === 'processing' ? 'inline-flex' : 'none';
+      
+      const itemsList = Array.isArray(o.items) ? o.items : [];
+      
+      document.getElementById('orderModalBody').innerHTML = `
+        <div style="background:var(--bg);border-radius:10px;padding:20px;margin-bottom:20px;">
+          <div class="flex justify-between items-center mb-3">
+            <div><h3 class="fw-700">Order #${o.id}</h3><div class="text-muted text-sm">Placed on: ${fmtDate(o.order_date || o.created_at)}</div></div>
+            <span class="badge ${o.delivery_status === 'delivered' ? 'badge-success' : 'badge-warning'}">${o.delivery_status}</span>
+          </div>
+          <div class="form-row">
+            <div><div class="text-xs text-muted">Total Amount</div><div class="fw-700 text-primary" style="font-size:18px;">₹${(Number(o.total_amount || 0)).toFixed(2)}</div></div>
+            <div><div class="text-xs text-muted">Payment</div><div class="fw-600">${(o.payment_method || '—').toUpperCase()}</div></div>
+            <div><div class="text-xs text-muted">Delivery Address</div><div class="fw-600">${o.delivery_address || '—'}</div></div>
+          </div>
+        </div>
+        <h4 class="fw-700 mb-3">Items</h4>
+        <div class="table-wrap">
+          <table style="width:100%;">
+            <thead><tr><th style="text-align:left;">Item</th><th style="text-align:center;">Qty</th><th style="text-align:right;">Price</th></tr></thead>
+            <tbody>
+              ${itemsList.map(i => `
+                <tr>
+                  <td>${i.name}</td>
+                  <td style="text-align:center;">${i.qty}</td>
+                  <td style="text-align:right;">₹${(Number(i.price || 0) * Number(i.qty || 0)).toFixed(2)}</td>
+                </tr>`).join('')}
+              ${itemsList.length === 0 ? '<tr><td colspan="3" style="text-align:center;padding:20px;">No items found</td></tr>' : ''}
+            </tbody>
+          </table>
+        </div>
+        ${o.delivered_at ? `<div class="alert alert-success mt-4"><span>✅</span> Delivered on ${fmtDate(o.delivered_at)}</div>` : ''}
+      `;
+    } catch (err) {
+      console.error('[Pharmacy] View Order Error:', err);
+      document.getElementById('orderModalBody').innerHTML = `<p class="text-danger">${err.message}</p>`;
+    }
+  }
+
+  async function simulateDelivery() {
+    if (!currentOrder) return;
+    try {
+      await PUT(`/orders/${currentOrder.id}/status`, { status: 'delivered' });
+      toast('Order marked as delivered!', 'success');
+      closeModal('orderModal');
+      loadOrders();
+    } catch (err) { toast(err.message, 'error'); }
   }
 
   loadMedicines();
   loadOrders();
+  updateCartUI(); // Initialize UI with persisted cart
   let medTimeout; document.getElementById('medSearch').addEventListener('input', () => { clearTimeout(medTimeout); medTimeout = setTimeout(loadMedicines, 300); });
 </script>
 </body>

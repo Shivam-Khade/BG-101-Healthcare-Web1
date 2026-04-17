@@ -372,8 +372,24 @@ apiRoute.post('/orders', authenticateToken, async (req, res, next) => {
 
 apiRoute.get('/orders', authenticateToken, async (req, res, next) => {
   try {
-    const orders = await Order.findAll({ where: { user_id: req.userId } });
+    const orders = await Order.findAll({ where: { user_id: req.userId }, order: [['order_date', 'DESC']] });
     res.json({ success: true, data: orders });
+  } catch(err) { next(err); }
+});
+
+apiRoute.put('/orders/:id/status', authenticateToken, async (req, res, next) => {
+  try {
+    const { status } = req.body;
+    const order = await Order.findOne({ where: { id: req.params.id, user_id: req.userId } });
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+    
+    await order.update({ delivery_status: status });
+    if (status === 'delivered') {
+      await order.update({ delivered_at: new Date() });
+      await Notification.create({ user_id: req.userId, title: 'Order Delivered', message: `Order #${order.id} has been successfully delivered.`, type: 'pharmacy' });
+    }
+    
+    res.json({ success: true, message: `Order status updated to ${status}`, data: order });
   } catch(err) { next(err); }
 });
 

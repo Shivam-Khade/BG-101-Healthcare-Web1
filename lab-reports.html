@@ -4,6 +4,7 @@
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lab Reports — MediConnect Patient</title>
   <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 <div class="app-layout">
@@ -101,20 +102,20 @@
               <div class="text-muted text-xs" style="margin-top:2px;">Ordered by Dr. ${r.Doctor ? r.Doctor.name : (r.doctor_name||'—')} · ${fmtDate(r.test_date || r.date)}</div>
             </div>
             <div style="display:flex;align-items:center;gap:10px;">
-              <span class="badge ${r.status === 'ready' ? 'badge-success' : 'badge-warning'}">${r.status === 'ready' ? 'Results Ready' : 'Pending'}</span>
-              ${r.status === 'ready' ? `<button class="btn btn-primary btn-sm" onclick="viewReport(${r.id})">View Results</button>` : ''}
+              <span class="badge ${['ready', 'completed'].includes(r.status) ? 'badge-success' : 'badge-warning'}">${['ready', 'completed'].includes(r.status) ? 'Results Ready' : 'Pending'}</span>
+              ${['ready', 'completed'].includes(r.status) ? `<button class="btn btn-primary btn-sm" onclick="viewReport(${r.id})">View Results</button>` : ''}
             </div>
           </div>
-          ${r.status === 'ready' && r.results?.length ? `
+          ${['ready', 'completed'].includes(r.status) && r.results?.length ? `
           <div class="card-body">
             ${r.results.slice(0, 4).map(res => `
               <div class="lab-result">
                 <div>
                   <div class="lr-name">${res.parameter}</div>
-                  <div class="lr-ref">Ref: ${res.reference_range} ${res.unit}</div>
+                  <div class="lr-ref">Ref: ${res.reference_range || '—'} ${res.unit || ''}</div>
                 </div>
                 <div style="text-align:right;">
-                  <div class="lr-value ${res.flag === 'High' ? 'text-danger' : res.flag === 'Low' ? 'text-warning' : 'text-success'}">${res.value} ${res.unit}</div>
+                  <div class="lr-value ${res.flag === 'High' ? 'text-danger' : res.flag === 'Low' ? 'text-warning' : 'text-success'}">${res.value} ${res.unit || ''}</div>
                   <div class="text-xs ${res.flag ? 'text-danger' : 'text-success'}">${res.flag || 'Normal'}</div>
                 </div>
               </div>`).join('')}
@@ -132,6 +133,7 @@
     try {
       const respR = await GET(`/lab-reports/${id}`);
       const r = respR.data || respR;
+      currentReport = r;
       document.getElementById('reportModalBody').innerHTML = `
         <div style="background:var(--bg);border-radius:10px;padding:16px;margin-bottom:20px;">
           <div class="flex justify-between items-center mb-2">
@@ -150,18 +152,78 @@
           <div class="lab-result">
             <div>
               <div class="lr-name">${res.parameter}</div>
-              <div class="lr-ref">Reference: ${res.reference_range} ${res.unit}</div>
+              <div class="lr-ref">Reference: ${res.reference_range || '—'} ${res.unit || ''}</div>
             </div>
             <div style="text-align:right;">
-              <div class="lr-value ${res.flag === 'High' ? 'text-danger' : res.flag === 'Low' ? 'text-warning' : ''}">${res.value} ${res.unit}</div>
+              <div class="lr-value ${res.flag === 'High' ? 'text-danger' : res.flag === 'Low' ? 'text-warning' : ''}">${res.value} ${res.unit || ''}</div>
               <span class="badge ${res.flag ? 'badge-danger' : 'badge-success'}" style="font-size:10px;">${res.flag || 'Normal'}</span>
             </div>
           </div>`).join('')}
-        ${r.remarks ? `<div class="alert alert-warning" style="margin-top:16px;"><span>🩺</span> <strong>Remarks:</strong> ${r.remarks}</div>` : ''}`;
-      document.getElementById('download-report-btn').onclick = () => r.file_url ? window.open(r.file_url) : toast('No downloadable file', 'warning');
+        ${r.remarks ? `<div class="alert alert-warning" style="margin-top:16px;"><span></span> <strong>Remarks:</strong> ${r.remarks}</div>` : ''}`;
+      
+      document.getElementById('download-report-btn').onclick = downloadReport;
     } catch (err) {
       document.getElementById('reportModalBody').innerHTML = `<p class="text-danger">${err.message}</p>`;
     }
+  }
+
+  function downloadReport() {
+    if (!currentReport) return;
+    const r = currentReport;
+    const element = document.createElement('div');
+    element.style.padding = '40px';
+    element.style.fontFamily = 'Arial, sans-serif';
+    
+    element.innerHTML = `
+      <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #2563eb; margin: 0;">MediConnect Laboratory</h1>
+        <p style="color: #64748b; margin: 4px 0;">Quality Health Diagnostics</p>
+      </div>
+      <hr style="border: 0; border-top: 1px solid #e2e8f0; margin-bottom: 30px;" />
+      <div style="display: flex; justify-content: space-between; margin-bottom: 40px;">
+        <div>
+          <h3 style="margin: 0 0 8px 0; font-size: 14px; text-transform: uppercase;" color: #64748b;">Patient Information:</h3>
+          <p style="margin: 0; font-weight: 700; font-size: 16px;">Demo Patient</p>
+        </div>
+        <div style="text-align: right;">
+          <h3 style="margin: 0 0 8px 0; font-size: 14px; text-transform: uppercase; color: #64748b;">Report Details:</h3>
+          <p style="margin: 0;"><strong>Test:</strong> ${r.test_name}</p>
+          <p style="margin: 0;"><strong>Date:</strong> ${fmtDate(r.test_date || r.date)}</p>
+          <p style="margin: 0;"><strong>Sample ID:</strong> #LAB-${r.id}</p>
+        </div>
+      </div>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px;">
+        <thead>
+          <tr style="background-color: #f8fafc;">
+            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0;">Parameter</th>
+            <th style="padding: 12px; text-align: center; border-bottom: 2px solid #e2e8f0;">Result</th>
+            <th style="padding: 12px; text-align: right; border-bottom: 2px solid #e2e8f0;">Reference Range</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${(r.results || []).map(res => `
+            <tr>
+              <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${res.parameter}</td>
+              <td style="padding: 12px; text-align: center; border-bottom: 1px solid #e2e8f0; font-weight: 700;">${res.value} ${res.unit || ''}</td>
+              <td style="padding: 12px; text-align: right; border-bottom: 1px solid #e2e8f0; color: #64748b;">${res.reference_range || '—'} ${res.unit || ''}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <h4 style="margin: 0 0 8px 0; font-size: 12px; text-transform: uppercase; color: #64748b;">Pathologist Remarks:</h4>
+        <p style="margin: 0; color: #334155;">${r.remarks || 'No significant abnormalities detected in clinical parameters.'}</p>
+      </div>
+    `;
+
+    const opt = {
+      margin: 10,
+      filename: `LabReport_${r.test_name.replace(/\s+/g, '_')}_${r.id}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(element).save();
   }
 
   loadReports();

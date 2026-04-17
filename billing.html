@@ -4,6 +4,10 @@
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Billing — MediConnect Patient</title>
   <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
 </head>
 <body>
 <div class="app-layout">
@@ -122,6 +126,24 @@
   </div>
 </div>
 
+<!-- Razorpay Simulation Modal -->
+<div class="modal-overlay" id="rzpModal" style="z-index: 9999;">
+  <div class="modal" style="width: 380px; padding: 0; background: transparent; box-shadow: none;">
+    <div style="background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+      <div style="background: #0d2138; color: white; padding: 20px; text-align: center;">
+        <div><img src="https://razorpay.com/build/browser/static/razorpay-logo.5cdb58df.svg" alt="Razorpay" style="height: 24px; filter: brightness(0) invert(1);" /></div>
+        <p style="margin: 12px 0 0 0; font-size: 15px; color: #cbd5e1;">Amount to pay</p>
+        <h2 style="margin: 4px 0 0 0; font-size: 28px;" id="rzp-amount">₹0.00</h2>
+      </div>
+      <div style="padding: 40px 30px; text-align: center;" id="rzp-body">
+        <div class="spinner" style="margin: 0 auto 16px auto; width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top: 4px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <p style="margin: 0; color: #1e293b; font-weight: 600; font-size: 16px;">Processing Payment...</p>
+        <p style="margin: 8px 0 0 0; font-size: 13px; color: #64748b;">Please do not close or refresh this window</p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <script src="js/app.js"></script>
 <script>
@@ -174,6 +196,7 @@
       const b = respB.data || respB;
       currentBill = b;
       document.getElementById('pay-btn').style.display = b.status !== 'paid' ? 'inline-flex' : 'none';
+      document.getElementById('dl-invoice-btn').onclick = downloadInvoice;
       document.getElementById('invoiceModalBody').innerHTML = `
         <div style="background:var(--bg);border-radius:10px;padding:20px;margin-bottom:20px;">
           <div class="flex justify-between items-center mb-3">
@@ -210,16 +233,116 @@
     openPayModal(currentBill.id, currentBill.invoice_number || currentBill.id, currentBill.total);
   }
 
+  function downloadInvoice() {
+    if (!currentBill) return;
+    const b = currentBill;
+    const element = document.createElement('div');
+    element.style.padding = '40px';
+    element.style.fontFamily = 'Arial, sans-serif';
+    
+    element.innerHTML = `
+      <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #2563eb; margin: 0;">MediConnect</h1>
+        <p style="color: #64748b; margin: 4px 0;">Patient Support: support@mediconnect.com</p>
+      </div>
+      <hr style="border: 0; border-top: 1px solid #e2e8f0; margin-bottom: 30px;" />
+      <div style="display: flex; justify-content: space-between; margin-bottom: 40px;">
+        <div>
+          <h3 style="margin: 0 0 8px 0; font-size: 14px; text-transform: uppercase; color: #64748b;">Invoice To:</h3>
+          <p style="margin: 0; font-weight: 700; font-size: 16px;">${b.patient_name || 'Valued Patient'}</p>
+        </div>
+        <div style="text-align: right;">
+          <h3 style="margin: 0 0 8px 0; font-size: 14px; text-transform: uppercase; color: #64748b;">Invoice Details:</h3>
+          <p style="margin: 0;"><strong>Invoice #:</strong> ${b.invoice_number || b.id}</p>
+          <p style="margin: 0;"><strong>Date:</strong> ${fmtDate(b.issue_date || b.date)}</p>
+          <p style="margin: 0;"><strong>Status:</strong> ${b.status.toUpperCase()}</p>
+        </div>
+      </div>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px;">
+        <thead>
+          <tr style="background-color: #f8fafc;">
+            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e2e8f0;">Description</th>
+            <th style="padding: 12px; text-align: right; border-bottom: 2px solid #e2e8f0;">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${(Array.isArray(b.items) ? b.items : [{ name: b.description || 'Medical Services', amount: b.total }]).map(i => `
+            <tr>
+              <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${i.name}</td>
+              <td style="padding: 12px; text-align: right; border-bottom: 1px solid #e2e8f0; font-weight: 600;">₹${i.amount}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td style="padding: 20px 12px; font-weight: 700; font-size: 18px;">Total Amount</td>
+            <td style="padding: 20px 12px; text-align: right; font-weight: 800; font-size: 24px; color: #2563eb;">₹${b.total}</td>
+          </tr>
+        </tfoot>
+      </table>
+      <div style="background-color: #f1f5f9; padding: 20px; border-radius: 8px; font-size: 14px; color: #475569;">
+        <p style="margin: 0 0 8px 0;"><strong>Note:</strong> This is a computer-generated invoice and doesn't require a physical signature.</p>
+        ${b.status === 'paid' ? `<p style="margin: 0; color: #16a34a; font-weight: 600;">✅ Paid via ${b.payment_method || 'Online Payment'}</p>` : ''}
+      </div>`;
+
+    const opt = {
+      margin: 10,
+      filename: `Invoice_${b.invoice_number || b.id}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(element).save();
+  }
+
   // POST /api/bills/:id/pay
   async function submitPayment() {
     const id = document.getElementById('pay-bill-id').value;
-    const payload = { payment_method: document.getElementById('pay-method').value, notes: document.getElementById('pay-notes').value };
-    try {
-      await POST(`/bills/${id}/pay`, payload);
-      closeModal('payModal');
-      toast('Payment recorded successfully!', 'success');
-      loadBills();
-    } catch (err) { toast(err.message || 'Payment failed', 'error'); }
+    const amountStr = document.getElementById('pay-amount').textContent;
+    const method = document.getElementById('pay-method').value;
+    const notes = document.getElementById('pay-notes').value;
+    const payload = { payment_method: method, notes: notes };
+
+    // Close the basic pay modal and open Razorpay simulator
+    closeModal('payModal');
+    
+    document.getElementById('rzp-amount').textContent = amountStr;
+    document.getElementById('rzp-body').innerHTML = `
+      <div class="spinner" style="margin: 0 auto 20px auto; width: 44px; height: 44px; border: 4px solid #e2e8f0; border-top: 4px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+      <p style="margin: 0; color: #1e293b; font-weight: 600; font-size: 16px;">Processing Payment...</p>
+      <p style="margin: 8px 0 0 0; font-size: 13px; color: #64748b;">Waiting for bank confirmation</p>
+    `;
+    openModal('rzpModal');
+
+    // Simulate 2.5 seconds processing delay
+    setTimeout(async () => {
+      try {
+        await POST(`/bills/${id}/pay`, payload);
+        
+        // Show success screen
+        document.getElementById('rzp-body').innerHTML = `
+          <div style="font-size: 54px; margin-bottom: 16px; animation: bounceIn 0.5s;">✅</div>
+          <h3 style="margin: 0 0 8px 0; color: #1e293b; font-size: 20px;">Payment Successful</h3>
+          <p style="margin: 0; font-size: 14px; color: #10b981; font-weight: 600;">Transaction Authorized</p>
+        `;
+        
+        // Auto-close after success
+        setTimeout(() => {
+          closeModal('rzpModal');
+          toast('Payment recorded successfully!', 'success');
+          loadBills();
+        }, 1800);
+        
+      } catch (err) {
+        // Show failure screen
+        document.getElementById('rzp-body').innerHTML = `
+          <div style="font-size: 54px; margin-bottom: 16px;">❌</div>
+          <h3 style="margin: 0 0 8px 0; color: #1e293b; font-size: 20px;">Payment Failed</h3>
+          <p style="margin: 0; font-size: 14px; color: #ef4444;">${err.message || 'Transaction Declined'}</p>
+          <button class="btn btn-outline" style="margin-top: 24px; width: 100%; border-color: #e2e8f0;" onclick="closeModal('rzpModal')">Close Window</button>
+        `;
+      }
+    }, 2500);
   }
 
   loadBills();
