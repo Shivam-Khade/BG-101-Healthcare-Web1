@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Portal Login — MediConnect</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #0f172a; color: white; margin: 0; font-family: 'Inter', sans-serif;}
+    .auth-card { background: #1e293b; padding: 40px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+    .auth-title { font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 24px; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 13px; color: #94a3b8; margin-bottom: 6px; }
+    .form-control { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
+    .btn { width: 100%; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; margin-top: 10px;}
+    .btn:hover { background: #2563eb; }
+    .badge { background: #ef4444; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; margin-bottom: 10px; display: inline-block;}
+  </style>
+</head>
+<body>
+  <div class="auth-card">
+    <div style="text-align: center;"><span class="badge">SECURE SYSTEM</span></div>
+    <div class="auth-title">🛡️ Admin Portal</div>
+    <form id="adminLoginForm">
+      <div class="form-group">
+        <label class="form-label">Admin Email</label>
+        <input type="email" id="email" class="form-control" placeholder="admin@mediconnect.com" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Admin Password</label>
+        <input type="password" id="password" class="form-control" placeholder="Enter secure password" required />
+      </div>
+      <button type="submit" class="btn">Authenticate</button>
+    </form>
+    <div id="error-msg" style="color: #ef4444; font-size: 13px; text-align: center; margin-top: 16px; display: none;"></div>
+  </div>
+
+  <script>
+    document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      
+      try {
+        const res = await fetch('http://localhost:3000/api/admin/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          localStorage.setItem('adminToken', data.token);
+          alert('Admin Login Successful! (Dashboard UI integration pending)');
+          // window.location.href = 'admin-dashboard.html';
+        } else {
+          const errEl = document.getElementById('error-msg');
+          errEl.textContent = data.message || 'Access denied.';
+          errEl.style.display = 'block';
+        }
+      } catch (err) {
+        alert('Server unreachable');
+      }
+    });
+  </script>
+</body>
+</html>

@@ -171,32 +171,45 @@
   // POST /api/emergency/sos   Body: { latitude, longitude, message }
   async function triggerSOS() {
     if (sosActive) return;
+    
+    // Set loading state
+    const btn = document.getElementById('sosBtn');
+    btn.innerHTML = `<span class="sos-icon">⏳</span><span class="sos-label" style="font-size:18px;">Sending...</span>`;
+    btn.disabled = true;
+
     const message = document.getElementById('sos-message').value;
 
+    // Fetch location with a shorter timeout so it doesn't freeze the UI
     let lat = null, lng = null;
     if (navigator.geolocation) {
       try {
-        const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 }));
+        const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3000 }));
         lat = pos.coords.latitude; lng = pos.coords.longitude;
-      } catch {}
+      } catch (e) { console.warn('Location blocked or timed out', e); }
     }
 
     try {
       await POST('/emergency/sos', { latitude: lat, longitude: lng, message });
       sosActive = true;
-      document.getElementById('sosBtn').classList.add('sos-active');
+      btn.innerHTML = `<span class="sos-icon">✅</span><span class="sos-label" style="font-size:24px;">Sent</span>`;
+      btn.classList.add('sos-active');
       document.getElementById('sos-status').style.display = 'block';
-      toast('🆘 Emergency alert sent to all contacts!', 'error');
+      toast('🆘 Emergency alert successfully sent!', 'success');
     } catch (err) {
+      btn.innerHTML = `<span class="sos-icon">🆘</span><span class="sos-label">SOS</span><span class="sos-hint">Tap to Alert</span>`;
+      btn.disabled = false;
       toast(err.message || 'Failed to send SOS', 'error');
     }
   }
 
   function cancelSOS() {
     sosActive = false;
-    document.getElementById('sosBtn').classList.remove('sos-active');
+    const btn = document.getElementById('sosBtn');
+    btn.classList.remove('sos-active');
+    btn.disabled = false;
+    btn.innerHTML = `<span class="sos-icon">🆘</span><span class="sos-label">SOS</span><span class="sos-hint">Tap to Alert</span>`;
     document.getElementById('sos-status').style.display = 'none';
-    toast('Alert cancelled', 'warning');
+    toast('Alert cancelled safety', 'warning');
   }
 
   // GET /api/emergency/hospitals?lat=&lng=&radius=5

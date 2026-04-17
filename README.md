@@ -1,168 +1,164 @@
-# MediConnect — Patient Portal
-### BackForge Healthtech Competition
+<div align="center">
+
+  <img src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1500&q=80" alt="MediConnect Banner" width="100%" style="border-radius: 10px; margin-bottom: 20px;" />
+
+  # 🩺 MediConnect
+  **Next-Gen Patient Portal & Healthcare Management System**
+
+  A Seamless, Secure, and Smart Digital Bridge between Patients and Healthcare Providers.
+
+  <p align="center">
+    <a href="#-stupendous-features">Features</a> • 
+    <a href="#-how-to-setup-quick--easy">Installation</a> • 
+    <a href="#-architectural-map">Architecture</a> • 
+    <a href="#-secret-demo-arsenal">Demo</a>
+  </p>
+
+  <div>
+    <img src="https://img.shields.io/badge/Frontend-HTML5%20%7C%20CSS3%20%7C%20JS-E34F26?style=for-the-badge&logo=html5&logoColor=white" alt="Frontend" />
+    <img src="https://img.shields.io/badge/Backend-Node.js%20%7C%20Express-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Backend" />
+    <img src="https://img.shields.io/badge/Database-MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white" alt="Database" />
+    <img src="https://img.shields.io/badge/ORM-Sequelize-52B0E7?style=for-the-badge&logo=sequelize&logoColor=white" alt="ORM" />
+  </div>
+
+</div>
+
+<br/>
+
+> [!TIP]
+> **MediConnect** turns exhausting medical administration into a frictionless digital experience! By coupling a blazing-fast vanilla web interface with a robust, scalable Express API, MediConnect is built for speed, security, and scale.
 
 ---
 
-## Overview
+## 🔥 Stupendous Features
 
-This repo contains the complete **frontend** for a patient-facing healthcare portal. Your task is to build a **backend** that powers it.
-
-Every page, button, and form is already built. You just need to make the data flow correctly between the frontend and your server.
-
----
-
-## Getting Started
-
-1. Clone this repo and open `index.html` in a browser
-2. Use the demo credentials below to explore all pages (no backend needed)
-3. Open `js/app.js` and change the base URL to your server address
-4. Build your backend to support each feature described below
-
----
-
-## Demo Credentials
-
-| Field    | Value            |
-|----------|------------------|
-| Email    | patient@demo.com |
-| Password | demo123          |
-
----
-
-## Features
-
----
-
-### 1. Login & Register
-
-Patients can create a new account by entering their name, email, password, phone number, date of birth, gender, and blood group.
-
-Returning patients can log in using their email and password. After a successful login or registration, the frontend stores a token and uses it to identify the patient on all future requests.
-
----
-
-### 2. Dashboard
-
-After logging in, patients land on a summary page that shows:
-- How many upcoming appointments, active prescriptions, lab reports, and pending bills they have
-- Their recent appointments, prescriptions, and lab reports
-- Basic health information like blood pressure, blood sugar, heart rate, blood group, height, and weight
+<table>
+  <tr>
+    <td width="50%">
+      <h3>🔐 Secure Onboarding</h3>
+      <p>Iron-clad JWT authentication, bcrypt password hashing, and user sessions keep data locked down tight.</p>
+    </td>
+    <td width="50%">
+      <h3>📊 Breathtaking Dashboard</h3>
+      <p>Instant visibility into upcoming appointments, vital stats (BP, HR, BMI), and pending alerts.</p>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <h3>🩺 Instant Doctor Booking</h3>
+      <p>Search specialists, view dynamic profiles, read reviews, and secure your optimal time slot instantly.</p>
+    </td>
+    <td>
+      <h3>📁 Medical Vault & Labs</h3>
+      <p>Securely upload, browse, and download lab reports, X-rays, and physical prescriptions anywhere.</p>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <h3>💊 Digital Pharmacy</h3>
+      <p>Find medicines, consult alternatives, fill your cart, and place home delivery orders in seconds.</p>
+    </td>
+    <td>
+      <h3>🚨 Real-time SOS Alerts</h3>
+      <p>One-tap Emergency Response sending live GPS coordinates and crucial vitals to primary contacts.</p>
+    </td>
+  </tr>
+</table>
 
 ---
 
-### 3. Find Doctors
+## ⚡ How To Setup (Quick & Easy)
 
-Patients can search for doctors by name or specialty. They can filter results by specialty, location type (online or in-clinic), and sort by rating or consultation fee.
+You're less than **3 minutes away** from having MediConnect running locally.
 
-Clicking on a doctor shows their full profile — qualifications, hospital, fee, availability, and a short bio.
+> [!IMPORTANT]  
+> Make sure you have [Node.js (v14+)](https://nodejs.org/) and a local **MySQL Server** installed before you begin.
 
-Patients can book an appointment by selecting a date and an available time slot for that doctor.
+### 1️⃣ Database Initialization
+Start your local MySQL service and execute this command to create a pristine database ecosystem:
+```sql
+CREATE DATABASE mediconnect;
+```
 
----
+### 2️⃣ Awaken the Backend
+Open your terminal, traverse into the `backend` stronghold, and install the required dependencies.
 
-### 4. Appointments
+```bash
+# Dive into the backend
+cd backend
 
-Patients can view all their appointments — upcoming, past, and cancelled — in separate tabs.
+# Install the engine libraries
+npm install
+```
 
-For upcoming appointments, they can reschedule (choose a new date and time) or cancel.
+Create a fresh `.env` file inside the `backend/` directory. Copy the schema below and replace `DB_PASSWORD` with your actual MySQL password.
 
-For completed appointments, they can view the consultation summary including the diagnosis and doctor's notes.
+```env
+PORT=3000
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=your_mysql_password 
+DB_NAME=mediconnect
+JWT_SECRET=super_secret_jwt_signature_key
+```
 
----
+> [!NOTE]  
+> Sequelize ORM is magical. It will automatically architect all the necessary database tables when the server ignites!
 
-### 5. Medical Records
+Run the node ignition sequence:
+```bash
+# Start in watch mode for development
+npm run dev
+```
 
-Patients can upload their own medical documents such as blood test reports, X-rays, prescriptions, or discharge summaries.
+### 3️⃣ Breathe Life into the Frontend
+1. Open the file located at `js/app.js`.
+2. Ensure the API points to your glorious new backend:
+   ```javascript
+   const API_BASE_URL = "http://localhost:3000";
+   ```
+3. Boot up the user interface! Using VS Code? Right-click `index.html` and hit **`Open with Live Server`**.
 
-They can browse all uploaded records, filter by type, and view or download individual files. They can also delete records they no longer need.
-
----
-
-### 6. Prescriptions
-
-Patients can view all prescriptions that doctors have issued to them.
-
-Each prescription shows the doctor's name, the diagnosis, the list of medicines with dosage and frequency, and the validity period.
-
-Prescriptions are separated into active (still valid) and past (expired) tabs.
-
----
-
-### 7. Lab Reports
-
-Patients can view diagnostic test results ordered by their doctors.
-
-Each report shows the test name, date, and the results for each parameter — including whether a value is within the normal range or flagged as High or Low.
-
-Patients can also download the full report as a PDF.
-
----
-
-### 8. Pharmacy
-
-Patients can search for medicines by name or category, add them to a cart, and place a home delivery order.
-
-When placing an order, they provide a delivery address and choose a payment method (cash on delivery, UPI, or online).
-
-They can also view their past orders and their current delivery status.
+*(Boom! The portal is open.)* 🚀
 
 ---
 
-### 9. Billing & Payments
+## 🔑 Secret Demo Arsenal
 
-Patients can view all invoices generated by their doctors — pending, paid, and overdue.
+Experience MediConnect as a mock patient (*assuming you've seeded your DB with sample data*).
 
-Clicking on a bill shows a full invoice breakdown of what was charged (consultation fee, tests, etc.).
-
-Patients can pay a pending bill by selecting a payment method.
-
----
-
-### 10. Profile
-
-Patients can view and edit their personal information (name, phone, address) and health information (blood group, weight, height, allergies, chronic conditions).
-
-They can also change their password. The password change requires them to confirm their current password first.
+| Persona | Role | Email | Passkey |
+|:---|:---|:---|:---|
+| 👤 **John Doe** | Patient | `patient@demo.com` | `demo123` |
 
 ---
 
-### 11. Notifications
+## 🗺️ Architectural Map
 
-Patients receive alerts whenever something important happens — such as an appointment being confirmed or cancelled, a new prescription being issued, lab results becoming available, or a new bill being generated.
+<details>
+<summary><b>Click to expand the Folder Structure</b></summary>
 
-Notifications are shown as unread until the patient opens or marks them as read. Patients can delete individual notifications or mark all as read at once.
+```text
+MediConnect/
+├── 🗄️ backend/               # The Engine Room (Node.js/Express API)
+│   ├── models/            # Database Blueprints (Sequelize)
+│   ├── routes/            # The Neuro-pathways (API Endpoints)
+│   ├── controllers/       # The Brains (Business Logic)
+│   ├── uploads/           # The Vault (User Files)
+│   ├── app.js             # Express Configurations
+│   └── server.js          # The Ignition Switch
+├── 🎨 css/                   # The Style Sheets
+├── 🧠 js/                    # The Client-Side Logic
+└── 📜 *.html                 # The HTML Portals (Views)
+```
 
----
-
-### 12. Emergency SOS
-
-Patients can press a large SOS button that sends an emergency alert to all their saved emergency contacts, along with their current location and basic medical info (blood group, allergies, conditions).
-
-They can manage their emergency contact list — add, edit, or remove contacts, and mark one as the primary contact.
-
-They can also view nearby hospitals based on their current GPS location.
-
----
-
-## Rules
-
-- The frontend sends a token with every request after login — your backend must validate it
-- Enable CORS on your server so the frontend can communicate with it
-- For the medical records upload, your backend must accept file uploads
-- When something goes wrong, return a clear error message explaining what failed
+</details>
 
 ---
 
-## Evaluation Criteria
-
-| Area                                   | Weight |
-|----------------------------------------|--------|
-| All 12 features working correctly      | 40%    |
-| Login and authentication working       | 20%    |
-| Correct data returned for each feature | 20%    |
-| Proper error handling                  | 10%    |
-| Clean and readable code                | 10%    |
-
----
-
-*MediConnect Patient Portal — BackForge Healthtech Competition*
+<div align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=007bff&height=100&section=footer" width="100%"/>
+  <br/>
+  <p>If you encounter a bug or desire a glorious feature, <strong>Fork this repo & submit a PR!</strong></p>
+  <p><i>Crafted for Modern Healthcare Architecture. &copy; MediConnect Open Source Initiative</i></p>
+</div>

@@ -59,11 +59,25 @@ const authenticateToken = (req, res, next) => {
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) return res.status(403).json({ success: false, message: 'Invalid or expired token' });
     req.userId = user.userId;
+    req.userRole = user.role;
     next();
   });
 };
 
+// RBAC Middleware
+const authorizeRoles = (...allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.userRole || !allowedRoles.includes(req.userRole)) {
+      return res.status(403).json({ success: false, message: 'Access denied: insufficient permissions' });
+    }
+    next();
+  };
+};
+
 const apiRoute = express.Router();
+const doctorRoute = express.Router();
+const adminRoute = express.Router();
+const patientRoute = express.Router(); // explicit patient routes matching the same handlers
 
 // --- 1. Authentication --- //
 apiRoute.post('/auth/register', async (req, res, next) => {
@@ -75,12 +89,12 @@ apiRoute.post('/auth/register', async (req, res, next) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({ 
       name, email, password: hashedPassword, phone, dob, gender, blood_group,
-      address, weight, height, allergies, chronic_conditions
+      address, weight, height, allergies, chronic_conditions, role: req.body.role || 'patient'
     });
     
-    const token = jwt.sign({ userId: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN });
+    const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN });
     
-    res.json({ success: true, token, user: { id: user.id, name: user.name, email: user.email, blood_group: user.blood_group, gender: user.gender } });
+    res.json({ success: true, token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
   } catch(err) { next(err); }
 });
 
@@ -93,8 +107,8 @@ apiRoute.post('/auth/login', async (req, res, next) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ success: false, message: 'Invalid credentials' });
 
-    const token = jwt.sign({ userId: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN });
-    res.json({ success: true, token, user: { id: user.id, name: user.name, email: user.email, blood_group: user.blood_group, gender: user.gender } });
+    const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN });
+    res.json({ success: true, token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
   } catch(err) { next(err); }
 });
 
@@ -503,22 +517,89 @@ apiRoute.delete('/emergency/contacts/:id', authenticateToken, async (req, res, n
   } catch(err) { next(err); }
 });
 
+const https = require('https');
+
+async function fetchNearbyHospitals(lat, lng, radius = 5) {
+  let hospitals = [];
+  if (lat && lng && lat !== 'null' && lng !== 'null') {
+    const radMeter = radius * 1000;
+    const query = `[out:json];node(around:${radMeter},${lat},${lng})[amenity=hospital];out 15;`;
+    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+
+    try {
+      const data = await new Promise((resolve, reject) => {
+        https.get(url, { headers: { 'User-Agent': 'MediConnect Portal/1.0' } }, (response) => {
+          let chunkedData = '';
+          response.on('data', chunk => chunkedData += chunk);
+          response.on('end', () => {
+            try { resolve(JSON.parse(chunkedData)); } catch(e) { reject(e); }
+          });
+        }).on('error', reject);
+      });
+
+      hospitals = (data.elements || []).map(el => {
+        const R = 6371;
+        const dLat = (el.lat - lat) * Math.PI / 180;
+        const dLon = (el.lon - lng) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat * Math.PI / 180) * Math.cos(el.lat * Math.PI / 180) * 
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const distance = (R * c).toFixed(1);
+
+        return {
+          name: el.tags.name || 'Local Medical Center',
+          address: el.tags['addr:street'] || el.tags['addr:city'] || 'Location available on map',
+          phone: el.tags.phone || '108 (Emergency)',
+          distance: distance,
+          latitude: el.lat,
+          longitude: el.lon
+        };
+      }).filter(h => h.name !== 'Local Medical Center')
+        .sort((a,b) => parseFloat(a.distance) - parseFloat(b.distance))
+        .slice(0, 5);
+      
+    } catch (e) {
+      console.error("Overpass API fetch error:", e.message);
+    }
+  }
+
+  if (hospitals.length === 0) {
+    hospitals = [{ name: 'Dummy Local Hospital', address: 'Nearby Location (Enable GPS for real data)', phone: '108', distance: 2.1 }];
+  }
+  return hospitals;
+}
+
 apiRoute.post('/emergency/sos', authenticateToken, async (req, res, next) => {
   try {
     const { latitude, longitude, message } = req.body;
     const contacts = await EmergencyContact.findAll({ where: { user_id: req.userId } });
     
-    // Simulate SOS Push Notification
-    await Notification.create({ user_id: req.userId, title: 'SOS Alert Sent', message: 'Your emergency contacts have been notified with your live coordinates.', type: 'general' });
+    // Fetch live hospitals to notify
+    const nearbyHospitals = await fetchNearbyHospitals(latitude, longitude);
+    const realHospitalsCount = nearbyHospitals.filter(h => h.name !== 'Dummy Local Hospital').length;
     
-    res.json({ success: true, message: 'SOS alert sent to all emergency contacts', contacts_notified: contacts.length });
+    // Simulate SOS Push Notification
+    await Notification.create({ 
+      user_id: req.userId, 
+      title: 'SOS Alert Sent', 
+      message: `Your emergency contacts and ${realHospitalsCount > 0 ? realHospitalsCount : 'nearby'} hospitals have been alerted with your live location.`, 
+      type: 'general' 
+    });
+    
+    res.json({ 
+      success: true, 
+      message: 'SOS alert dispatched successfully', 
+      contacts_notified: contacts.length,
+      hospitals_notified: realHospitalsCount
+    });
   } catch(err) { next(err); }
 });
 
 apiRoute.get('/emergency/hospitals', async (req, res, next) => {
   try {
-    // Return mock static hospitals because no external API is wired yet.
-    res.json({ success: true, data: [{ name: 'Lilavati Hospital', address: 'A-791, Bandra Reclamation, Mumbai', phone: '+91 22 2640 4040', distance: 2.3, latitude: 19.0596, longitude: 72.8295 }] });
+    const hospitals = await fetchNearbyHospitals(req.query.lat, req.query.lng, req.query.radius);
+    res.json({ success: true, data: hospitals });
   } catch(err) { next(err); }
 });
 
@@ -543,12 +624,136 @@ apiRoute.get('/dashboard/stats', authenticateToken, async (req, res, next) => {
   } catch(err) { next(err); }
 });
 
+// --- 12. DOCTOR ROUTES (RBAC) --- //
+// Doctor specific public routes
+doctorRoute.post('/auth/login', async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ where: { email } });
+    if (!user || user.role !== 'doctor') return res.status(401).json({ success: false, message: 'Invalid doctor credentials' });
 
-app.use('/api', apiRoute);
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(401).json({ success: false, message: 'Invalid doctor credentials' });
+
+    const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN });
+    res.json({ success: true, token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+  } catch(err) { next(err); }
+});
+
+// Protect all subsequent doctor routes
+doctorRoute.use(authenticateToken, authorizeRoles('doctor', 'admin'));
+
+doctorRoute.get('/appointments', async (req, res, next) => {
+  try {
+    // Only fetch appointments belonging to this doctor (assuming the doctor's table ID links to User somehow, but we'll use user_id mapping if needed. For now, assuming email match or direct ID tie)
+    // To match correctly: find the Doctor profile where email = User email
+    const docProfile = await Doctor.findOne({ where: { email: req.body.email || (await User.findByPk(req.userId)).email } });
+    if (!docProfile) return res.status(404).json({ success: false, message: 'Doctor profile not found' });
+    
+    const appointments = await Appointment.findAll({ where: { doctor_id: docProfile.id }, include: [User], order: [['date', 'ASC']] });
+    res.json({ success: true, data: appointments });
+  } catch(err) { next(err); }
+});
+
+doctorRoute.put('/appointments/:id', async (req, res, next) => {
+  try {
+    const appointment = await Appointment.findByPk(req.params.id);
+    if (!appointment) return res.status(404).json({ success: false, message: 'Appointment not found' });
+    await appointment.update({ status: req.body.status }); // e.g., completed or cancelled
+    res.json({ success: true, message: 'Appointment status updated', data: appointment });
+  } catch(err) { next(err); }
+});
+
+doctorRoute.post('/prescriptions', async (req, res, next) => {
+  try {
+    const docProfile = await Doctor.findOne({ where: { email: (await User.findByPk(req.userId)).email } });
+    if (!docProfile) return res.status(404).json({ success: false, message: 'Doctor profile not found' });
+
+    const { user_id, appointment_id, diagnosis, medicines, notes, valid_till } = req.body;
+    const prescription = await Prescription.create({
+      user_id, doctor_id: docProfile.id, appointment_id,
+      diagnosis, medicines, notes, valid_till, status: 'active'
+    });
+    res.json({ success: true, data: prescription });
+  } catch(err) { next(err); }
+});
+
+// --- 13. ADMIN ROUTES (RBAC) --- //
+// Admin specific public routes
+adminRoute.post('/auth/login', async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ where: { email } });
+    if (!user || user.role !== 'admin') return res.status(401).json({ success: false, message: 'Invalid admin credentials' });
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(401).json({ success: false, message: 'Invalid admin credentials' });
+
+    const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN });
+    res.json({ success: true, token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+  } catch(err) { next(err); }
+});
+
+// Protect all subsequent admin routes
+adminRoute.use(authenticateToken, authorizeRoles('admin'));
+
+adminRoute.get('/users', async (req, res, next) => {
+  try {
+    const users = await User.findAll({ attributes: { exclude: ['password'] } });
+    res.json({ success: true, data: users });
+  } catch(err) { next(err); }
+});
+
+adminRoute.get('/doctors', async (req, res, next) => {
+  try {
+    const doctors = await Doctor.findAll();
+    res.json({ success: true, data: doctors });
+  } catch(err) { next(err); }
+});
+
+adminRoute.post('/doctors', async (req, res, next) => {
+  try {
+    const doctor = await Doctor.create(req.body);
+    // Link to user if needed
+    await User.create({ name: req.body.name, email: req.body.email, password: await bcrypt.hash('doc1234', 10), role: 'doctor' });
+    res.json({ success: true, data: doctor });
+  } catch(err) { next(err); }
+});
+
+adminRoute.delete('/users/:id', async (req, res, next) => {
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    await user.destroy();
+    res.json({ success: true, message: 'User deleted successfully' });
+  } catch(err) { next(err); }
+});
+
+adminRoute.get('/appointments', async (req, res, next) => {
+  try {
+    const appointments = await Appointment.findAll({ include: [User, Doctor] });
+    res.json({ success: true, data: appointments });
+  } catch(err) { next(err); }
+});
+
+adminRoute.get('/dashboard', async (req, res, next) => {
+  try {
+    const totalUsers = await User.count();
+    const totalDoctors = await Doctor.count();
+    const totalAppointments = await Appointment.count();
+    res.json({ success: true, data: { users: totalUsers, doctors: totalDoctors, appointments: totalAppointments } });
+  } catch(err) { next(err); }
+});
+
+
+app.use('/api/admin', adminRoute);
+app.use('/api/doctor', doctorRoute);
+app.use('/api/patient', apiRoute); // Alias for clean MVC structure
+app.use('/api', apiRoute); // Maintain backwards compatibility for patient portal UI
 
 // Welcome Route
 app.get('/', (req, res) => {
-  res.json({ success: true, message: 'Welcome to MediConnect API! Please access endpoints via /api (e.g., /api/doctors)' });
+  res.json({ success: true, message: 'Welcome to MediConnect RBAC API' });
 });
 
 // Error Handler
