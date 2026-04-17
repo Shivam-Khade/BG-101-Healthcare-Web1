@@ -59,12 +59,7 @@
       <p>Find medicines, consult alternatives, fill your cart, and place home delivery orders in seconds.</p>
     </td>
     <td>
-      <h3>🚨 Real-time SOS Alerts</h3>
-      <p>One-tap Emergency Response sending live GPS coordinates and crucial vitals to primary contacts.</p>
-    </td>
-  </tr>
-  <tr>
-    <td>
+
       <h3>🚧 Full Role-Based Access (RBAC)</h3>
       <p>Hardened route protection decoupling Patients, Doctors, and System Administrators securely.</p>
     </td>
@@ -72,6 +67,13 @@
       <h3>🛡️ Staff Command Portals</h3>
       <p>Dedicated Doctor login to issue prescriptions, and an Admin dashboard to securely onboard new staff.</p>
     </td>
+## 🔥 added Features
+      <h3>🚨 Real-time SOS Alerts</h3>
+      <p>One-tap Emergency Response sending live GPS coordinates and crucial vitals to primary contacts.</p>
+    </td>
+  </tr>
+  <tr>
+    <td>
   </tr>
 </table>
 
