@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard — MediConnect</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    body { background: #f8fafc; font-family: 'Inter', sans-serif; margin: 0; padding: 0; color: #1e293b; }
+    .header { background: #0f172a; color: white; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; }
+    .container { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
+    .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); margin-bottom: 24px; }
+    .title { font-size: 20px; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 20px; margin-top: 0; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
+    .form-control { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
+    .btn { background: #2563eb; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    .btn:hover { background: #1d4ed8; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th { text-align: left; background: #f1f5f9; padding: 12px; font-size: 13px; color: #475569; text-transform: uppercase; }
+    td { padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #10b981; color: white; padding: 12px 24px; border-radius: 8px; display: none; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div style="font-size: 20px; font-weight: 700;">🛡️ MediConnect Admin</div>
+    <button onclick="logout()" class="btn" style="background:#ef4444; padding: 8px 16px;">Logout</button>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2 class="title">➕ Add New Doctor</h2>
+      <form id="addDoctorForm">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" id="doc-name" class="form-control" required placeholder="Dr. John Doe" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address (for login)</label>
+            <input type="email" id="doc-email" class="form-control" required placeholder="dr.john@hospital.com" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Specialty</label>
+            <input type="text" id="doc-specialty" class="form-control" required placeholder="e.g. Cardiologist" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Hospital / Clinic Name</label>
+            <input type="text" id="doc-hospital" class="form-control" required placeholder="City Health Clinic" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Years of Experience</label>
+            <input type="number" id="doc-experience" class="form-control" required placeholder="10" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Consultation Fee (₹)</label>
+            <input type="number" id="doc-fee" class="form-control" required placeholder="500" />
+          </div>
+        </div>
+        <button type="submit" class="btn" style="margin-top: 10px;">Create Doctor</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2 class="title">📋 Registered Doctors</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Specialty</th>
+            <th>Hospital</th>
+            <th>Fee</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="doctorsList">
+          <tr><td colspan="4" style="text-align: center;">Loading doctors...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">Action successful!</div>
+
+  <script>
+    const token = localStorage.getItem('adminToken');
+    if (!token) window.location.href = 'admin-login.html';
+
+    function logout() {
+      localStorage.removeItem('adminToken');
+      window.location.href = 'admin-login.html';
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.style.display = 'block';
+      setTimeout(() => t.style.display = 'none', 3000);
+    }
+
+    async function loadDoctors() {
+      try {
+        const res = await fetch('http://localhost:8000/api/admin/doctors', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          const tbody = document.getElementById('doctorsList');
+          if (data.data.length === 0) {
+             tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No doctors found.</td></tr>';
+             return;
+          }
+          tbody.innerHTML = data.data.map(d => `
+            <tr>
+              <td style="font-weight: 600;">${d.name}</td>
+              <td>${d.specialty}</td>
+              <td>${d.hospital || '—'}</td>
+              <td>₹${d.fee || 0}</td>
+              <td>
+                <button onclick="deleteDoctor(${d.id}, '${d.name.replace(/'/g, "\\'")}')"
+                  style="background:#ef4444;color:white;border:none;padding:6px 14px;border-radius:5px;cursor:pointer;font-size:13px;font-weight:600;">
+                  🗑️ Remove
+                </button>
+              </td>
+            </tr>
+          `).join('');
+        }
+      } catch (err) { }
+    }
+
+    document.getElementById('addDoctorForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        name: document.getElementById('doc-name').value,
+        email: document.getElementById('doc-email').value,
+        specialty: document.getElementById('doc-specialty').value,
+        hospital: document.getElementById('doc-hospital').value,
+        experience: document.getElementById('doc-experience').value,
+        fee: document.getElementById('doc-fee').value,
+        location_type: 'clinic',
+        rating: 5.0
+      };
+
+      try {
+        const res = await fetch('http://localhost:8000/api/admin/doctors', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showToast('Doctor created successfully!');
+          e.target.reset();
+          loadDoctors();
+        } else {
+          alert('Error: ' + data.message);
+        }
+      } catch (err) {
+        alert('Failed to connect to server.');
+      }
+    });
+
+    loadDoctors();
+
+    async function deleteDoctor(id, name) {
+      if (!confirm(`Remove Dr. ${name} permanently? This cannot be undone.`)) return;
+      try {
+        const res = await fetch(`http://localhost:8000/api/admin/doctors/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Doctor removed successfully!');
+          loadDoctors();
+        } else {
+          alert('Error: ' + data.message);
+        }
+      } catch (err) {
+        alert('Failed to connect to server.');
+      }
+    }
+  </script>
+</body>
+</html>

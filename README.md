@@ -63,6 +63,16 @@
       <p>One-tap Emergency Response sending live GPS coordinates and crucial vitals to primary contacts.</p>
     </td>
   </tr>
+  <tr>
+    <td>
+      <h3>🚧 Full Role-Based Access (RBAC)</h3>
+      <p>Hardened route protection decoupling Patients, Doctors, and System Administrators securely.</p>
+    </td>
+    <td>
+      <h3>🛡️ Staff Command Portals</h3>
+      <p>Dedicated Doctor login to issue prescriptions, and an Admin dashboard to securely onboard new staff.</p>
+    </td>
+  </tr>
 </table>
 
 ---
@@ -127,9 +137,11 @@ npm run dev
 
 Experience MediConnect as a mock patient (*assuming you've seeded your DB with sample data*).
 
-| Persona | Role | Email | Passkey |
-|:---|:---|:---|:---|
-| 👤 **John Doe** | Patient | `patient@demo.com` | `demo123` |
+| Persona | Role | Email | Passkey | Portal |
+|:---|:---|:---|:---|:---|
+| 👤 **John Doe** | Patient | `patient@demo.com` | `demo123` | `index.html` |
+| 👨‍⚕️ **Dr. Rajesh** | Doctor | `rajesh@demo.com` | `doc1234` | `doctor-login.html` |
+| 🛡️ **Sys Admin** | Admin | `admin@gmail.com` | `admin@123` | `admin-login.html` |
 
 ---
 
@@ -146,10 +158,14 @@ MediConnect/
 │   ├── controllers/       # The Brains (Business Logic)
 │   ├── uploads/           # The Vault (User Files)
 │   ├── app.js             # Express Configurations
-│   └── server.js          # The Ignition Switch
+│   ├── server.js          # The Ignition Switch
+│   └── vercel.json        # Serverless Cloud Deployment Config
 ├── 🎨 css/                   # The Style Sheets
 ├── 🧠 js/                    # The Client-Side Logic
-└── 📜 *.html                 # The HTML Portals (Views)
+├── 📜 index.html             # Patient Authentication Portal
+├── 📜 doctor-login.html      # Medical Staff Authentication Portal
+├── 📜 admin-dashboard.html   # Administrator Control Center
+└── 📜 *.html                 # Remainder of HTML Portals (Views)
 ```
 
 </details>

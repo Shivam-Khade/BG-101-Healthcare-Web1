@@ -22,6 +22,11 @@
     <div style="text-align: center;"><span class="badge">SECURE SYSTEM</span></div>
     <div class="auth-title">🛡️ Admin Portal</div>
     <form id="adminLoginForm">
+      <div style="padding:10px; background:#1e293b; border:1px dashed #3b82f6; border-radius:6px; margin-bottom:16px; font-size:12px; color:#cbd5e1;">
+        <span style="color:#3b82f6; font-weight:700;">DEMO ADMIN</span><br/>
+        Email: <strong>admin@gmail.com</strong><br/>
+        Pass: <strong>admin@123</strong>
+      </div>
       <div class="form-group">
         <label class="form-label">Admin Email</label>
         <input type="email" id="email" class="form-control" placeholder="admin@mediconnect.com" required />
@@ -42,7 +47,7 @@
       const password = document.getElementById('password').value;
       
       try {
-        const res = await fetch('http://localhost:3000/api/admin/auth/login', {
+        const res = await fetch('http://localhost:8000/api/admin/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
@@ -51,8 +56,7 @@
         
         if (data.success) {
           localStorage.setItem('adminToken', data.token);
-          alert('Admin Login Successful! (Dashboard UI integration pending)');
-          // window.location.href = 'admin-dashboard.html';
+          window.location.href = 'admin-dashboard.html';
         } else {
           const errEl = document.getElementById('error-msg');
           errEl.textContent = data.message || 'Access denied.';

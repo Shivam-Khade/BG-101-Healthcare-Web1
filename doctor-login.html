@@ -23,6 +23,12 @@
     <div style="text-align: center;"><span class="badge">MEDICAL STAFF</span></div>
     <div class="auth-title">👨‍⚕️ Doctor Portal</div>
     <form id="doctorLoginForm">
+      <div style="padding:10px; background:#f0f9ff; border:1px dashed #0ea5e9; border-radius:6px; margin-bottom:16px; font-size:12px; color:#334155;">
+        <span style="color:#0ea5e9; font-weight:700;">DEMO DOCTOR</span><br/>
+        Email: <strong>rajesh@demo.com</strong><br/>
+        Pass: <strong>doc1234</strong>
+        <br/><i style="font-size:10px;color:#64748b;">(Or use any doctor you created in the Admin portal)</i>
+      </div>
       <div class="form-group">
         <label class="form-label">Professional Email</label>
         <input type="email" id="email" class="form-control" placeholder="dr.name@hospital.com" required />
@@ -43,7 +49,7 @@
       const password = document.getElementById('password').value;
       
       try {
-        const res = await fetch('http://localhost:3000/api/doctor/auth/login', {
+        const res = await fetch('http://localhost:8000/api/doctor/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
